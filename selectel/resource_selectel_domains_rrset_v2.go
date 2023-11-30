@@ -1,0 +1,194 @@
+package selectel
+
+import (
+	"context"
+	"log"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	domainsV2 "github.com/selectel/domains-go/pkg/v2"
+)
+
+func resourceDomainsRrsetV2() *schema.Resource {
+	return &schema.Resource{
+		CreateContext: resourceDomainsRrsetV2Create,
+		ReadContext:   resourceDomainsRrsetV2Read,
+		UpdateContext: resourceDomainsRrsetV2Update,
+		DeleteContext: resourceDomainsRrsetV2Delete,
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+		Schema: map[string]*schema.Schema{
+			"name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"type": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"comment": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"managed_by": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ttl": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"records": {
+				Type:     schema.TypeList,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"content": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"disabled": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func resourceDomainsRrsetV2Create(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	zoneID := d.Get("zone_id").(string)
+	selMutexKV.Lock(zoneID)
+	defer selMutexKV.Unlock(zoneID)
+
+	client, err := getDomainsV2Client(meta)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	recordType := domainsV2.RecordType(d.Get("type").(string))
+	records := []domainsV2.RecordItem{}
+	recordsList := d.Get("records").([]interface{})
+	for _, recordItem := range recordsList {
+		if record, isOk := recordItem.(map[string]interface{}); isOk {
+			records = append(records, domainsV2.RecordItem{
+				Content:  record["content"].(string),
+				Disabled: record["disabled"].(bool),
+			})
+		}
+	}
+	createOpts := &domainsV2.RRSet{
+		Name:     d.Get("name").(string),
+		Type:     recordType,
+		TTL:      d.Get("ttl").(int),
+		ZoneUUID: zoneID,
+		Records:  records,
+	}
+
+	if comment := d.Get("comment"); comment != nil {
+		createOpts.Comment = comment.(string)
+	}
+	if managedBy := d.Get("managed_by"); managedBy != nil {
+		createOpts.ManagedBy = managedBy.(string)
+	}
+
+	rrset, err := client.CreateRRSet(ctx, zoneID, createOpts)
+	if err != nil {
+		return diag.FromErr(errCreatingObject(objectRecord, err))
+	}
+
+	d.SetId(rrset.UUID)
+
+	return resourceDomainsRrsetV2Read(ctx, d, meta)
+}
+
+func resourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	client, err := getDomainsV2Client(meta)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	rrsetID := d.Id()
+	zoneID := d.Get("zone_id").(string)
+
+	log.Print(msgGet(objectRrset, rrsetID))
+
+	rrset, err := client.GetRRSet(ctx, zoneID, rrsetID)
+	if err != nil {
+		d.SetId("")
+		return diag.FromErr(errGettingObject(objectRrset, rrsetID, err))
+	}
+
+	d.SetId(rrset.UUID)
+	d.Set("name", rrset.Name)
+	d.Set("comment", rrset.Comment)
+	d.Set("managed_by", rrset.ManagedBy)
+	d.Set("ttl", rrset.TTL)
+	d.Set("type", rrset.Type)
+	d.Set("zone_id", rrset.ZoneUUID)
+	d.Set("records", generateListFromRecords(rrset.Records))
+
+	return nil
+}
+
+func resourceDomainsRrsetV2Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	rrsetID := d.Id()
+	zoneID := d.Get("zone_id").(string)
+
+	selMutexKV.Lock(zoneID)
+	defer selMutexKV.Unlock(zoneID)
+
+	client, err := getDomainsV2Client(meta)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	recordType := domainsV2.RecordType(d.Get("type").(string))
+	records := []domainsV2.RecordItem{}
+
+	if d.HasChanges("") {
+		updateOpts := &domainsV2.RRSet{
+			Name:      d.Get("name").(string),
+			Type:      recordType,
+			TTL:       d.Get("ttl").(int),
+			ZoneUUID:  zoneID,
+			Comment:   d.Get("comment").(string),
+			ManagedBy: d.Get("managed_by").(string),
+			Records:   records,
+		}
+		err = client.UpdateRRSet(ctx, zoneID, rrsetID, updateOpts)
+		if err != nil {
+			return diag.FromErr(errUpdatingObject(objectRecord, d.Id(), err))
+		}
+	}
+
+	return resourceDomainsRrsetV2Read(ctx, d, meta)
+}
+
+func resourceDomainsRrsetV2Delete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	zoneID := d.Get("zone_id").(string)
+	selMutexKV.Lock(zoneID)
+	defer selMutexKV.Unlock(zoneID)
+
+	client, err := getDomainsV2Client(meta)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	rrsetID := d.Id()
+
+	log.Print(msgGet(objectRrset, rrsetID))
+
+	err = client.DeleteRRSet(ctx, zoneID, rrsetID)
+	if err != nil {
+		return diag.FromErr(errDeletingObject(objectRrset, rrsetID, err))
+	}
+
+	return nil
+}
