@@ -15,6 +15,7 @@ func resourceDomainsZoneV2() *schema.Resource {
 		CreateContext: resourceDomainsZoneV2Create,
 		ReadContext:   resourceDomainsZoneV2Read,
 		DeleteContext: resourceDomainsZoneV2Delete,
+		UpdateContext: resourceDomainsZoneV2Update,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -22,7 +23,7 @@ func resourceDomainsZoneV2() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
+				// ForceNew: true,
 			},
 			"comment": {
 				Type:     schema.TypeString,
@@ -52,11 +53,10 @@ func resourceDomainsZoneV2() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			// TODO: add field disabled in API lib
-			// "disabled": {
-			// 	Type:     schema.TypeBool,
-			// 	Computed: true,
-			// },
+			"disabled": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -84,6 +84,7 @@ func resourceDomainsZoneV2Create(ctx context.Context, d *schema.ResourceData, me
 	d.Set("last_check_status", zone.LastCheckStatus)
 	d.Set("last_delegated_at", zone.LastDelegatedAt.Format(time.RFC3339))
 	d.Set("project_id", zone.ProjectID)
+	d.Set("disabled", zone.Disabled)
 
 	return nil
 }
@@ -116,7 +117,29 @@ func resourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, meta
 	d.Set("delegation_checked_at", zone.DelegationCheckedAt.Format(time.RFC3339))
 	d.Set("last_check_status", zone.LastCheckStatus)
 	d.Set("last_delegated_at", zone.LastDelegatedAt.Format(time.RFC3339))
+	d.Set("disabled", zone.Disabled)
 	d.Set("project_id", zone.ProjectID)
+
+	return nil
+}
+
+func resourceDomainsZoneV2Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	if !d.HasChange("comment") {
+		return nil
+	}
+
+	client, err := getDomainsV2Client(meta)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	zoneID := d.Id()
+	comment := d.Get("comment").(string)
+
+	err = client.UpdateZoneComment(ctx, zoneID, comment)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	return nil
 }
