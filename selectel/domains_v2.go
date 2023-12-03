@@ -8,9 +8,11 @@ import (
 	domainsV2 "github.com/selectel/domains-go/pkg/v2"
 )
 
-// TODO: add DNS v2 in examples
 func getDomainsV2Client(meta interface{}) (domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], error) {
 	config := meta.(*Config)
+	if config.ProjectID == "" {
+		return nil, fmt.Errorf("SEL_PROJECT_ID must be set for the dns v2")
+	}
 
 	selvpcClient, err := config.GetSelVPCClientWithProjectScope(config.ProjectID)
 	if err != nil {

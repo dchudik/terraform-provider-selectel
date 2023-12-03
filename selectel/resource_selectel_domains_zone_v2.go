@@ -76,7 +76,7 @@ func resourceDomainsZoneV2Create(ctx context.Context, d *schema.ResourceData, me
 		return diag.FromErr(errCreatingObject(objectZone, err))
 	}
 	d.SetId(zone.UUID)
-	// d.Set("name", zone.Name)
+	d.Set("name", zone.Name)
 	d.Set("comment", zone.Comment)
 	d.Set("created_at", zone.CreatedAt.Format(time.RFC3339))
 	d.Set("updated_at", zone.UpdatedAt.Format(time.RFC3339))

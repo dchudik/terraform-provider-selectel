@@ -3,7 +3,6 @@ package selectel
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"strings"
 
@@ -141,11 +140,6 @@ func resourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, met
 }
 
 func resourceDomainsRrsetV2ImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	config := meta.(*Config)
-	if config.ProjectID == "" {
-		return nil, fmt.Errorf("SEL_PROJECT_ID must be set for the resource import")
-	}
-
 	client, err := getDomainsV2Client(meta)
 	if err != nil {
 		return nil, err
