@@ -2,7 +2,10 @@ package selectel
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -16,7 +19,7 @@ func resourceDomainsRrsetV2() *schema.Resource {
 		UpdateContext: resourceDomainsRrsetV2Update,
 		DeleteContext: resourceDomainsRrsetV2Delete,
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: resourceDomainsRrsetV2ImportState,
 		},
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -135,6 +138,60 @@ func resourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, met
 	d.Set("records", generateListFromRecords(rrset.Records))
 
 	return nil
+}
+
+func resourceDomainsRrsetV2ImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	config := meta.(*Config)
+	if config.ProjectID == "" {
+		return nil, fmt.Errorf("SEL_PROJECT_ID must be set for the resource import")
+	}
+
+	client, err := getDomainsV2Client(meta)
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(d.Id(), "/")
+	if len(parts) != 3 {
+		return nil, errors.New("id must include three parts: zone_name/rrset_name/rrset_type")
+	}
+
+	zoneName := parts[0]
+	rrsetName := parts[1]
+	rrsetType := parts[2]
+
+	zone, err := getZoneByName(ctx, client, zoneName)
+	if err != nil {
+		return nil, err
+	}
+
+	searchRrsetOpts := &map[string]string{
+		"name": rrsetName,
+		"type": rrsetType,
+	}
+
+	rrsets, err := client.ListRRSets(ctx, zone.UUID, searchRrsetOpts)
+	if err != nil {
+		d.SetId("")
+		return nil, err
+	}
+	if rrsets.GetCount() == 0 {
+		return nil, errors.New("")
+	}
+	if rrsets.GetCount() > 1 {
+		return nil, errors.New("")
+	}
+	rrset := rrsets.GetItems()[0]
+	d.SetId(rrset.UUID)
+	d.Set("name", rrset.Name)
+	d.Set("comment", rrset.Comment)
+	d.Set("managed_by", rrset.ManagedBy)
+	d.Set("ttl", rrset.TTL)
+	d.Set("type", rrset.Type)
+	d.Set("zone_id", rrset.ZoneUUID)
+	d.Set("records", generateListFromRecords(rrset.Records))
+
+	return []*schema.ResourceData{d}, nil
 }
 
 func resourceDomainsRrsetV2Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

@@ -2,6 +2,7 @@ package selectel
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -17,13 +18,12 @@ func resourceDomainsZoneV2() *schema.Resource {
 		DeleteContext: resourceDomainsZoneV2Delete,
 		UpdateContext: resourceDomainsZoneV2Update,
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: resourceDomainsZoneV2ImportState,
 		},
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
-				// ForceNew: true,
 			},
 			"comment": {
 				Type:     schema.TypeString,
@@ -73,10 +73,10 @@ func resourceDomainsZoneV2Create(ctx context.Context, d *schema.ResourceData, me
 	log.Print(msgCreate(objectZone, zoneName))
 	zone, err := client.CreateZone(ctx, createOpts)
 	if err != nil {
-		return diag.FromErr(errCreatingObject(objectDomain, err))
+		return diag.FromErr(errCreatingObject(objectZone, err))
 	}
 	d.SetId(zone.UUID)
-	d.Set("name", zone.Name)
+	// d.Set("name", zone.Name)
 	d.Set("comment", zone.Comment)
 	d.Set("created_at", zone.CreatedAt.Format(time.RFC3339))
 	d.Set("updated_at", zone.UpdatedAt.Format(time.RFC3339))
@@ -100,13 +100,13 @@ func resourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, meta
 	}
 	zones, err := client.ListZones(ctx, optsForSearchZone)
 	if err != nil {
-		return diag.FromErr(errGettingObject(objectDomain, zoneName, err))
+		return diag.FromErr(errGettingObject(objectZone, zoneName, err))
 	}
 	if zones.GetCount() == 0 {
-		return diag.FromErr(errGettingObject(objectDomain, zoneName, ErrZoneNotFound))
+		return diag.FromErr(errGettingObject(objectZone, zoneName, ErrZoneNotFound))
 	}
 	if zones.GetCount() > 1 {
-		return diag.FromErr(errGettingObject(objectDomain, zoneName, ErrFoundMultipleZones))
+		return diag.FromErr(errGettingObject(objectZone, zoneName, ErrFoundMultipleZones))
 	}
 	zone := zones.GetItems()[0]
 	d.SetId(zone.UUID)
@@ -121,6 +121,37 @@ func resourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, meta
 	d.Set("project_id", zone.ProjectID)
 
 	return nil
+}
+
+func resourceDomainsZoneV2ImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	config := meta.(*Config)
+	if config.ProjectID == "" {
+		return nil, fmt.Errorf("SEL_PROJECT_ID must be set for the resource import")
+	}
+
+	client, err := getDomainsV2Client(meta)
+	if err != nil {
+		return nil, err
+	}
+
+	zoneName := d.Get("name").(string)
+	zone, err := getZoneByName(ctx, client, zoneName)
+	if err != nil {
+		return nil, err
+	}
+
+	d.SetId(zone.UUID)
+	d.Set("name", zone.Name)
+	d.Set("comment", zone.Comment)
+	d.Set("created_at", zone.CreatedAt.Format(time.RFC3339))
+	d.Set("updated_at", zone.UpdatedAt.Format(time.RFC3339))
+	d.Set("delegation_checked_at", zone.DelegationCheckedAt.Format(time.RFC3339))
+	d.Set("last_check_status", zone.LastCheckStatus)
+	d.Set("last_delegated_at", zone.LastDelegatedAt.Format(time.RFC3339))
+	d.Set("disabled", zone.Disabled)
+	d.Set("project_id", zone.ProjectID)
+
+	return []*schema.ResourceData{d}, nil
 }
 
 func resourceDomainsZoneV2Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -151,7 +182,7 @@ func resourceDomainsZoneV2Delete(ctx context.Context, d *schema.ResourceData, me
 	}
 	err = client.DeleteZone(ctx, d.Id())
 	if err != nil {
-		return diag.FromErr(errDeletingObject(objectDomain, d.Id(), err))
+		return diag.FromErr(errDeletingObject(objectZone, d.Id(), err))
 	}
 
 	return nil

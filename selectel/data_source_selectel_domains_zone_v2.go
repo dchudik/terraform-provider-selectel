@@ -51,11 +51,10 @@ func dataSourceDomainsZoneV2() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			// TODO: add it to api
-			// "disabled": {
-			// 	Type:     schema.TypeBool,
-			// 	Computed: true,
-			// },
+			"disabled": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -69,22 +68,11 @@ func dataSourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, me
 
 	log.Print(msgGet(objectZone, zoneName))
 
-	optsForSearchZone := &map[string]string{
-		"filter": zoneName,
-	}
-	zones, err := client.ListZones(ctx, optsForSearchZone)
+	zone, err := getZoneByName(ctx, client, zoneName)
 	if err != nil {
-		return diag.FromErr(errGettingObject(objectDomain, zoneName, err))
+		return diag.FromErr(err)
 	}
-	if zones.GetCount() == 0 {
-		// return err_not_found
-		return diag.FromErr(errGettingObject(objectDomain, zoneName, ErrZoneNotFound))
-	}
-	if zones.GetCount() > 1 {
-		// return err_many_zones
-		return diag.FromErr(errGettingObject(objectDomain, zoneName, ErrFoundMultipleZones))
-	}
-	zone := zones.GetItems()[0]
+
 	d.SetId(zone.UUID)
 	d.Set("name", zone.Name)
 	d.Set("comment", zone.Comment)
@@ -94,6 +82,7 @@ func dataSourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, me
 	d.Set("last_check_status", zone.LastCheckStatus)
 	d.Set("last_delegated_at", zone.LastDelegatedAt.Format(time.RFC3339))
 	d.Set("project_id", zone.ProjectID)
+	d.Set("disabled", zone.Disabled)
 
 	return nil
 }

@@ -11,7 +11,6 @@ import (
 )
 
 func TestAccDomainsZoneV2DataSourceBasic(t *testing.T) {
-	// TODO: fix with dot in end. When somain don't end dot, then tests not pass
 	testZoneName := fmt.Sprintf("%s.ru.", acctest.RandomWithPrefix("tf-acc"))
 	resourceZoneName := "zone_tf_acc_test_1"
 	resource.Test(t, resource.TestCase{
@@ -22,7 +21,7 @@ func TestAccDomainsZoneV2DataSourceBasic(t *testing.T) {
 			{
 				Config: testAccDomainsZoneV2DataSourceBasic(resourceZoneName, testZoneName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccDomainsZoneV2DataSourceID(fmt.Sprintf("data.selectel_domains_zone_v2.%[1]s", resourceZoneName)),
+					testAccDomainsZoneV2ID(fmt.Sprintf("data.selectel_domains_zone_v2.%[1]s", resourceZoneName)),
 					resource.TestCheckResourceAttr(fmt.Sprintf("data.selectel_domains_zone_v2.%[1]s", resourceZoneName), "name", testZoneName),
 				),
 			},
@@ -30,11 +29,11 @@ func TestAccDomainsZoneV2DataSourceBasic(t *testing.T) {
 	})
 }
 
-func testAccDomainsZoneV2DataSourceID(name string) resource.TestCheckFunc {
+func testAccDomainsZoneV2ID(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
-			return fmt.Errorf("can't find zone data source: %s", name)
+			return fmt.Errorf("can't find zone: %s", name)
 		}
 
 		if rs.Primary.ID == "" {

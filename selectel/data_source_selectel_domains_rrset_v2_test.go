@@ -12,7 +12,6 @@ import (
 )
 
 func TestAccDomainsRrsetV2DataSourceBasic(t *testing.T) {
-	// TODO: fix with dot in end. When somain don't end dot, then tests not pass
 	testZoneName := fmt.Sprintf("%s.ru.", acctest.RandomWithPrefix("tf-acc"))
 	testRrsetName := fmt.Sprintf("%[1]s.%[2]s", acctest.RandomWithPrefix("tf-acc"), testZoneName)
 	testRrsetType := domainsV2.TXT
@@ -24,12 +23,12 @@ func TestAccDomainsRrsetV2DataSourceBasic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccSelectelPreCheckWithProjectID(t) },
 		ProviderFactories: testAccProviders,
-		CheckDestroy:      testAccCheckDomainsV2ZoneDestroy,
+		CheckDestroy:      testAccCheckDomainsV2RrsetDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDomainsRrsetV2DataSourceBasic(resourceRrsetName, testRrsetName, string(testRrsetType), testRrrsetContent, testRrsetTTL, resourceZoneName, testZoneName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccDomainsRrsetV2DataSourceID(dataSourceRrrsetName),
+					testAccDomainsRrsetV2ID(dataSourceRrrsetName),
 					resource.TestCheckResourceAttr(dataSourceRrrsetName, "name", testRrsetName),
 					resource.TestCheckResourceAttr(dataSourceRrrsetName, "type", string(testRrsetType)),
 					resource.TestCheckResourceAttrSet(dataSourceRrrsetName, "zone_id"),
@@ -39,11 +38,11 @@ func TestAccDomainsRrsetV2DataSourceBasic(t *testing.T) {
 	})
 }
 
-func testAccDomainsRrsetV2DataSourceID(name string) resource.TestCheckFunc {
+func testAccDomainsRrsetV2ID(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
-			return fmt.Errorf("can't find rrset data source: %s", name)
+			return fmt.Errorf("can't find rrset: %s", name)
 		}
 
 		if rs.Primary.ID == "" {

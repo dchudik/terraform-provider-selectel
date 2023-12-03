@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	domainsV2 "github.com/selectel/domains-go/pkg/v2"
-	v2 "github.com/selectel/domains-go/pkg/v2"
 )
 
 var (
@@ -76,8 +75,7 @@ func dataSourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, m
 	rrsetType := d.Get("type").(string)
 
 	log.Print(msgGet(objectRrset, rrsetName))
-	// TODO: id Option and create and test if statement
-	// TODO: type Option and create and test if statement
+
 	optsForSearchRrset := &map[string]string{
 		"name": rrsetName,
 		"type": rrsetType,
@@ -117,7 +115,7 @@ func dataSourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, m
 }
 
 // generateListFromRecords - generate terraform TypeList from records in rrset
-func generateListFromRecords(records []v2.RecordItem) []interface{} {
+func generateListFromRecords(records []domainsV2.RecordItem) []interface{} {
 	var recordsAsList []interface{}
 	for _, record := range records {
 		recordsAsList = append(recordsAsList, map[string]interface{}{

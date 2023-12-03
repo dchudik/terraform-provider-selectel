@@ -5,10 +5,31 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+func TestAccDomainsZoneV2Basic(t *testing.T) {
+	testZoneName := fmt.Sprintf("%s.xyz.", acctest.RandomWithPrefix("tf-acc"))
+	resourceZoneName := "zone_tf_acc_test_1"
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccSelectelPreCheckWithProjectID(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckDomainsV2ZoneDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDomainsZoneV2Basic(resourceZoneName, testZoneName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccDomainsZoneV2ID(fmt.Sprintf("selectel_domains_zone_v2.%[1]s", resourceZoneName)),
+					resource.TestCheckResourceAttr(fmt.Sprintf("selectel_domains_zone_v2.%[1]s", resourceZoneName), "name", testZoneName),
+				),
+			},
+		},
+	})
+}
 func testAccDomainsZoneV2Basic(resourceName, zoneName string) string {
 	return fmt.Sprintf(`
 resource "selectel_domains_zone_v2" %[1]q {
