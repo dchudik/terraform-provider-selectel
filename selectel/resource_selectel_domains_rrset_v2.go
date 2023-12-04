@@ -3,6 +3,7 @@ package selectel
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 
@@ -106,8 +107,15 @@ func resourceDomainsRrsetV2Create(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	d.SetId(rrset.UUID)
+	d.Set("name", rrset.Name)
+	d.Set("comment", rrset.Comment)
+	d.Set("managed_by", rrset.ManagedBy)
+	d.Set("ttl", rrset.TTL)
+	d.Set("type", rrset.Type)
+	d.Set("zone_id", rrset.ZoneUUID)
+	d.Set("records", generateListFromRecords(rrset.Records))
 
-	return resourceDomainsRrsetV2Read(ctx, d, meta)
+	return nil
 }
 
 func resourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -119,12 +127,12 @@ func resourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, met
 	rrsetID := d.Id()
 	zoneID := d.Get("zone_id").(string)
 
-	log.Print(msgGet(objectRrset, rrsetID))
+	log.Print(msgGet(objectRrset, fmt.Sprintf("zone_id: %s, rrset_id: %s", zoneID, rrsetID)))
 
 	rrset, err := client.GetRRSet(ctx, zoneID, rrsetID)
 	if err != nil {
 		d.SetId("")
-		return diag.FromErr(errGettingObject(objectRrset, rrsetID, err))
+		return diag.FromErr(errGettingObject(objectRrset, fmt.Sprintf("zone_id: %s, rrset_id: %s", zoneID, rrsetID), err))
 	}
 
 	d.SetId(rrset.UUID)
@@ -201,9 +209,10 @@ func resourceDomainsRrsetV2Update(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	recordType := domainsV2.RecordType(d.Get("type").(string))
+	// TODO: added update
 	records := []domainsV2.RecordItem{}
 
-	if d.HasChanges("") {
+	if d.HasChanges("type", "ttl", "comment", "managed_by", "records") {
 		updateOpts := &domainsV2.RRSet{
 			Name:      d.Get("name").(string),
 			Type:      recordType,
@@ -234,7 +243,7 @@ func resourceDomainsRrsetV2Delete(ctx context.Context, d *schema.ResourceData, m
 
 	rrsetID := d.Id()
 
-	log.Print(msgGet(objectRrset, rrsetID))
+	log.Print(msgDelete(objectRrset, fmt.Sprintf("zone_id: %s, rrset_id: %s", zoneID, rrsetID)))
 
 	err = client.DeleteRRSet(ctx, zoneID, rrsetID)
 	if err != nil {

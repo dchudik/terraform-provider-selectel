@@ -32,7 +32,7 @@ func getDomainsV2Client(meta interface{}) (domainsV2.DNSClient[domainsV2.Zone, d
 
 func getZoneByName(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], zoneName string) (*domainsV2.Zone, error) {
 	optsForSearchZone := &map[string]string{
-		"filter": zoneName,
+		"name": zoneName,
 	}
 	zones, err := client.ListZones(ctx, optsForSearchZone)
 	if err != nil {
