@@ -2,7 +2,6 @@ package selectel
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -75,16 +74,11 @@ func resourceDomainsZoneV2Create(ctx context.Context, d *schema.ResourceData, me
 	if err != nil {
 		return diag.FromErr(errCreatingObject(objectZone, err))
 	}
-	d.SetId(zone.UUID)
-	d.Set("name", zone.Name)
-	d.Set("comment", zone.Comment)
-	d.Set("created_at", zone.CreatedAt.Format(time.RFC3339))
-	d.Set("updated_at", zone.UpdatedAt.Format(time.RFC3339))
-	d.Set("delegation_checked_at", zone.DelegationCheckedAt.Format(time.RFC3339))
-	d.Set("last_check_status", zone.LastCheckStatus)
-	d.Set("last_delegated_at", zone.LastDelegatedAt.Format(time.RFC3339))
-	d.Set("project_id", zone.ProjectID)
-	d.Set("disabled", zone.Disabled)
+
+	err = setZoneToResourceData(d, zone)
+	if err != nil {
+		return diag.FromErr(errCreatingObject(objectZone, err))
+	}
 
 	return nil
 }
@@ -109,26 +103,16 @@ func resourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(errGettingObject(objectZone, zoneName, ErrFoundMultipleZones))
 	}
 	zone := zones.GetItems()[0]
-	d.SetId(zone.UUID)
-	d.Set("name", zone.Name)
-	d.Set("comment", zone.Comment)
-	d.Set("created_at", zone.CreatedAt.Format(time.RFC3339))
-	d.Set("updated_at", zone.UpdatedAt.Format(time.RFC3339))
-	d.Set("delegation_checked_at", zone.DelegationCheckedAt.Format(time.RFC3339))
-	d.Set("last_check_status", zone.LastCheckStatus)
-	d.Set("last_delegated_at", zone.LastDelegatedAt.Format(time.RFC3339))
-	d.Set("disabled", zone.Disabled)
-	d.Set("project_id", zone.ProjectID)
+
+	err = setZoneToResourceData(d, zone)
+	if err != nil {
+		return diag.FromErr(errGettingObject(objectZone, zoneName, err))
+	}
 
 	return nil
 }
 
 func resourceDomainsZoneV2ImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	config := meta.(*Config)
-	if config.ProjectID == "" {
-		return nil, fmt.Errorf("SEL_PROJECT_ID must be set for the resource import")
-	}
-
 	client, err := getDomainsV2Client(meta)
 	if err != nil {
 		return nil, err
@@ -140,16 +124,10 @@ func resourceDomainsZoneV2ImportState(ctx context.Context, d *schema.ResourceDat
 		return nil, err
 	}
 
-	d.SetId(zone.UUID)
-	d.Set("name", zone.Name)
-	d.Set("comment", zone.Comment)
-	d.Set("created_at", zone.CreatedAt.Format(time.RFC3339))
-	d.Set("updated_at", zone.UpdatedAt.Format(time.RFC3339))
-	d.Set("delegation_checked_at", zone.DelegationCheckedAt.Format(time.RFC3339))
-	d.Set("last_check_status", zone.LastCheckStatus)
-	d.Set("last_delegated_at", zone.LastDelegatedAt.Format(time.RFC3339))
-	d.Set("disabled", zone.Disabled)
-	d.Set("project_id", zone.ProjectID)
+	err = setZoneToResourceData(d, zone)
+	if err != nil {
+		return nil, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }
@@ -169,7 +147,7 @@ func resourceDomainsZoneV2Update(ctx context.Context, d *schema.ResourceData, me
 
 	err = client.UpdateZoneComment(ctx, zoneID, comment)
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(errUpdatingObject(objectZone, zoneID, err))
 	}
 
 	return nil
@@ -184,6 +162,21 @@ func resourceDomainsZoneV2Delete(ctx context.Context, d *schema.ResourceData, me
 	if err != nil {
 		return diag.FromErr(errDeletingObject(objectZone, d.Id(), err))
 	}
+
+	return nil
+}
+
+func setZoneToResourceData(d *schema.ResourceData, zone *domainsV2.Zone) error {
+	d.SetId(zone.UUID)
+	d.Set("name", zone.Name)
+	d.Set("comment", zone.Comment)
+	d.Set("created_at", zone.CreatedAt.Format(time.RFC3339))
+	d.Set("updated_at", zone.UpdatedAt.Format(time.RFC3339))
+	d.Set("delegation_checked_at", zone.DelegationCheckedAt.Format(time.RFC3339))
+	d.Set("last_check_status", zone.LastCheckStatus)
+	d.Set("last_delegated_at", zone.LastDelegatedAt.Format(time.RFC3339))
+	d.Set("project_id", zone.ProjectID)
+	d.Set("disabled", zone.Disabled)
 
 	return nil
 }

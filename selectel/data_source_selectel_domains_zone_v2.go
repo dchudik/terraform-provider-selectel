@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -73,16 +72,10 @@ func dataSourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, me
 		return diag.FromErr(err)
 	}
 
-	d.SetId(zone.UUID)
-	d.Set("name", zone.Name)
-	d.Set("comment", zone.Comment)
-	d.Set("created_at", zone.CreatedAt.Format(time.RFC3339))
-	d.Set("updated_at", zone.UpdatedAt.Format(time.RFC3339))
-	d.Set("delegation_checked_at", zone.DelegationCheckedAt.Format(time.RFC3339))
-	d.Set("last_check_status", zone.LastCheckStatus)
-	d.Set("last_delegated_at", zone.LastDelegatedAt.Format(time.RFC3339))
-	d.Set("project_id", zone.ProjectID)
-	d.Set("disabled", zone.Disabled)
+	err = setZoneToResourceData(d, zone)
+	if err != nil {
+		return diag.FromErr(errGettingObject(objectZone, zoneName, err))
+	}
 
 	return nil
 }
