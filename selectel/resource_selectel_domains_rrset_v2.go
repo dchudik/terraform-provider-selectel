@@ -106,14 +106,10 @@ func resourceDomainsRrsetV2Create(ctx context.Context, d *schema.ResourceData, m
 		return diag.FromErr(errCreatingObject(objectRecord, err))
 	}
 
-	d.SetId(rrset.UUID)
-	d.Set("name", rrset.Name)
-	d.Set("comment", rrset.Comment)
-	d.Set("managed_by", rrset.ManagedBy)
-	d.Set("ttl", rrset.TTL)
-	d.Set("type", rrset.Type)
-	d.Set("zone_id", rrset.ZoneUUID)
-	d.Set("records", generateListFromRecords(rrset.Records))
+	err = setRrsetToResourceData(d, rrset)
+	if err != nil {
+		return diag.FromErr(errCreatingObject(objectRecord, err))
+	}
 
 	return nil
 }
@@ -135,14 +131,10 @@ func resourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, met
 		return diag.FromErr(errGettingObject(objectRrset, fmt.Sprintf("zone_id: %s, rrset_id: %s", zoneID, rrsetID), err))
 	}
 
-	d.SetId(rrset.UUID)
-	d.Set("name", rrset.Name)
-	d.Set("comment", rrset.Comment)
-	d.Set("managed_by", rrset.ManagedBy)
-	d.Set("ttl", rrset.TTL)
-	d.Set("type", rrset.Type)
-	d.Set("zone_id", rrset.ZoneUUID)
-	d.Set("records", generateListFromRecords(rrset.Records))
+	err = setRrsetToResourceData(d, rrset)
+	if err != nil {
+		return diag.FromErr(errGettingObject(objectRecord, fmt.Sprintf("zone_id: %s rrset_id: %s", zoneID, rrsetID), err))
+	}
 
 	return nil
 }
@@ -167,31 +159,15 @@ func resourceDomainsRrsetV2ImportState(ctx context.Context, d *schema.ResourceDa
 		return nil, err
 	}
 
-	searchRrsetOpts := &map[string]string{
-		"name": rrsetName,
-		"type": rrsetType,
-	}
-
-	rrsets, err := client.ListRRSets(ctx, zone.UUID, searchRrsetOpts)
+	rrset, err := getRrsetByNameAndType(ctx, client, zone.UUID, rrsetName, rrsetType)
 	if err != nil {
-		d.SetId("")
 		return nil, err
 	}
-	if rrsets.GetCount() == 0 {
-		return nil, errors.New("")
+
+	err = setRrsetToResourceData(d, rrset)
+	if err != nil {
+		return nil, err
 	}
-	if rrsets.GetCount() > 1 {
-		return nil, errors.New("")
-	}
-	rrset := rrsets.GetItems()[0]
-	d.SetId(rrset.UUID)
-	d.Set("name", rrset.Name)
-	d.Set("comment", rrset.Comment)
-	d.Set("managed_by", rrset.ManagedBy)
-	d.Set("ttl", rrset.TTL)
-	d.Set("type", rrset.Type)
-	d.Set("zone_id", rrset.ZoneUUID)
-	d.Set("records", generateListFromRecords(rrset.Records))
 
 	return []*schema.ResourceData{d}, nil
 }
@@ -249,6 +225,19 @@ func resourceDomainsRrsetV2Delete(ctx context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(errDeletingObject(objectRrset, rrsetID, err))
 	}
+
+	return nil
+}
+
+func setRrsetToResourceData(d *schema.ResourceData, rrset *domainsV2.RRSet) error {
+	d.SetId(rrset.UUID)
+	d.Set("name", rrset.Name)
+	d.Set("comment", rrset.Comment)
+	d.Set("managed_by", rrset.ManagedBy)
+	d.Set("ttl", rrset.TTL)
+	d.Set("type", rrset.Type)
+	d.Set("zone_id", rrset.ZoneUUID)
+	d.Set("records", generateListFromRecords(rrset.Records))
 
 	return nil
 }

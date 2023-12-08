@@ -45,5 +45,6 @@ func getZoneByName(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zon
 		return nil, ErrFoundMultipleZones
 	}
 	zone := zones.GetItems()[0]
-	return zone, err
+
+	return zone, nil
 }
