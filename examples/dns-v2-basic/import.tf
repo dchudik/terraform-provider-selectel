@@ -1,31 +1,31 @@
-# Edit domain name for import from your project
-variable "domain_name_for_import" {
+# Edit zone name for import from your project
+variable "zone_name_for_import" {
   default = "tf-provider-test-import-basic.ru."
 }
 
 import {
-    id = var.domain_name_for_import
+    id = var.zone_name_for_import
     provider = selectel
     to = tf_basic_import_ru
 }
 
 resource "selectel_domains_zone_v2" "tf_basic_import_ru" {
-  name = var.domain_name_for_import
+  name = var.zone_name_for_import
 }
 
 # Edit rrset name for import from your project
 variable "rrset_name_for_import" {
-  default = format("a.%s", var.domain_name_for_import)
+  default = format("a.%s", var.zone_name_for_import)
 }
 # Edit rrset type for import from your project
 variable "rrset_type_for_import" {
   default = "A"
 }
 
-# For import rrset use domain_name/rrset_name/rrset_type as resource id 
+# For import rrset use zone_name/rrset_name/rrset_type as resource id 
 import {
     id = format("%s/%s/%s", 
-        var.domain_name_for_import, 
+        var.zone_name_for_import, 
         var.rrset_name_for_import, var.rrset_type_for_import)
     provider = selectel
     to = a_tf_basic_import_ru

@@ -7,18 +7,18 @@ terraform {
   }
 }
 
-# Edit domain name to your unique domain name
-variable "domain_name" {
-  default = "tf-provider-test-basic3.ru."
+# Edit zone name to your unique zone name
+variable "zone_name" {
+  default = "tf-provider-test-basic.ru."
 }
 
 resource "selectel_domains_zone_v2" "tf_basic_ru" {
-  name = var.domain_name
+  name = var.zone_name
 }
 
 resource "selectel_domains_rrset_v2" "a_tf_basic_ru" {
   zone_id = selectel_domains_zone_v2.tf_basic_ru.id
-  name    = format("a.%s",var.domain_name)
+  name    = format("a.%s",var.zone_name)
   type    = "A"
   ttl     = 60
   records {
@@ -29,7 +29,7 @@ resource "selectel_domains_rrset_v2" "a_tf_basic_ru" {
 
 resource "selectel_domains_rrset_v2" "txt_tf_basic_ru" {
   zone_id = selectel_domains_zone_v2.tf_basic_ru.id
-  name    = format("txt.%s",var.domain_name)
+  name    = format("txt.%s",var.zone_name)
   type    = "TXT"
   ttl     = 60
   records {
@@ -38,13 +38,17 @@ resource "selectel_domains_rrset_v2" "txt_tf_basic_ru" {
   }
 }
 
+# Edit zone name for get information about zone from your project
+variable "zone_name_for_data" {
+  default = "tf-provider-test-data-basic.ru."
+}
 
 data "selectel_domains_zone_v2" "data_tf_selectel_basic_ru" {
-  name = "tf-provider-test-basic.ru."
+  name = var.zone_name_for_data
 }
 
 data "selectel_domains_rrset_v2" "data_txt_tf_selectel_basic_ru" {
-  name    = "txt.tf-provider-test-basic.ru."
+  name    = format("txt.%s", var.zone_name_for_data)
   zone_id = data.selectel_domains_zone_v2.data_tf_selectel_basic_ru.id
   type    = "TXT"
 }
