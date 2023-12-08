@@ -7,15 +7,19 @@ terraform {
   }
 }
 
+variable "domain" {
+  default = "tf-provider-test-basic3.ru."
+}
+
 # Resource for zone
 resource "selectel_domains_zone_v2" "tf_basic_ru" {
-  name = "tf-provider-test-basic.ru."
+  name = var.domain
 }
 
 # Resources for rrset
 resource "selectel_domains_rrset_v2" "a_tf_basic_ru" {
   zone_id = selectel_domains_zone_v2.tf_basic_ru.id
-  name    = "a.tf-provider-test-basic.ru."
+  name    = format("a.%s",var.domain)
   type    = "A"
   ttl     = 60
   records {
@@ -26,7 +30,7 @@ resource "selectel_domains_rrset_v2" "a_tf_basic_ru" {
 
 resource "selectel_domains_rrset_v2" "txt_tf_basic_ru" {
   zone_id = selectel_domains_zone_v2.tf_basic_ru.id
-  name    = "txt.tf-provider-test-basic.ru."
+  name    = format("txt.%s",var.domain)
   type    = "TXT"
   ttl     = 60
   records {
