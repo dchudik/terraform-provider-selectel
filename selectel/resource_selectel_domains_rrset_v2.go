@@ -75,17 +75,10 @@ func resourceDomainsRrsetV2Create(ctx context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	recordType := domainsV2.RecordType(d.Get("type").(string))
-	records := []domainsV2.RecordItem{}
 	recordsList := d.Get("records").([]interface{})
-	for _, recordItem := range recordsList {
-		if record, isOk := recordItem.(map[string]interface{}); isOk {
-			records = append(records, domainsV2.RecordItem{
-				Content:  record["content"].(string),
-				Disabled: record["disabled"].(bool),
-			})
-		}
-	}
+	records := generateRecordsFromList(recordsList)
 	createOpts := &domainsV2.RRSet{
 		Name:     d.Get("name").(string),
 		Type:     recordType,
@@ -253,4 +246,19 @@ func generateListFromRecords(records []domainsV2.RecordItem) []interface{} {
 	}
 
 	return recordsAsList
+}
+
+// generateRecordsFromList - generate records for Rrset from terraform TypeList
+func generateRecordsFromList(recordsList []interface{}) []domainsV2.RecordItem {
+	records := []domainsV2.RecordItem{}
+	for _, recordItem := range recordsList {
+		if record, isOk := recordItem.(map[string]interface{}); isOk {
+			records = append(records, domainsV2.RecordItem{
+				Content:  record["content"].(string),
+				Disabled: record["disabled"].(bool),
+			})
+		}
+	}
+
+	return records
 }
