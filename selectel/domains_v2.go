@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 
 	domainsV2 "github.com/selectel/domains-go/pkg/v2"
 )
@@ -41,13 +42,48 @@ func getZoneByName(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zon
 	if err != nil {
 		return nil, err
 	}
-	if zones.GetCount() == 0 {
-		return nil, ErrZoneNotFound
-	}
-	if zones.GetCount() > 1 {
-		return nil, ErrFoundMultipleZones
-	}
-	zone := zones.GetItems()[0]
 
-	return zone, nil
+	r, err := regexp.Compile(fmt.Sprintf("^%s.?", zoneName))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, zone := range zones.GetItems() {
+		if r.MatchString(zone.Name) {
+			return zone, nil
+		}
+	}
+
+	return nil, ErrZoneNotFound
+}
+
+func getRrsetByNameAndType(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], zoneID, rrsetName, rrsetType string) (*domainsV2.RRSet, error) {
+	optsForSearchRrset := &map[string]string{
+		"name": rrsetName,
+		"type": rrsetType,
+	}
+
+	rrsets, err := client.ListRRSets(ctx, zoneID, optsForSearchRrset)
+	if err != nil {
+		return nil, errGettingObject(objectRrset, rrsetName, err)
+	}
+
+	r, err := regexp.Compile(fmt.Sprintf("^%s.?", rrsetName))
+	if err != nil {
+		return nil, errGettingObject(objectRrset, rrsetName, err)
+	}
+
+	var rrset *domainsV2.RRSet
+	for _, rrsetInResp := range rrsets.GetItems() {
+		if match := r.MatchString(rrsetInResp.Name); match {
+			rrset = rrsetInResp
+			break
+		}
+	}
+
+	if rrset == nil {
+		return nil, errGettingObject(objectRrset, rrsetName, ErrRrsetNotFound)
+	}
+
+	return rrset, nil
 }

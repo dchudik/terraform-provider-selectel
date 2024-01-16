@@ -1,6 +1,7 @@
 package selectel
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -21,7 +22,7 @@ func TestAccDomainsZoneV2DataSourceBasic(t *testing.T) {
 			{
 				Config: testAccDomainsZoneV2DataSourceBasic(resourceZoneName, testZoneName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccDomainsZoneV2ID(fmt.Sprintf("data.selectel_domains_zone_v2.%[1]s", resourceZoneName)),
+					testAccDomainsZoneV2Exists(fmt.Sprintf("data.selectel_domains_zone_v2.%[1]s", resourceZoneName)),
 					resource.TestCheckResourceAttr(fmt.Sprintf("data.selectel_domains_zone_v2.%[1]s", resourceZoneName), "name", testZoneName),
 				),
 			},
@@ -29,17 +30,28 @@ func TestAccDomainsZoneV2DataSourceBasic(t *testing.T) {
 	})
 }
 
-func testAccDomainsZoneV2ID(name string) resource.TestCheckFunc {
+func testAccDomainsZoneV2Exists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
 			return fmt.Errorf("can't find zone: %s", name)
 		}
 
-		if rs.Primary.ID == "" {
-			return errors.New("zone data source ID not set")
+		zoneID := rs.Primary.ID
+		if zoneID == "" {
+			return errors.New("zone ID not set in tf state")
 		}
 
+		meta := testAccProvider.Meta()
+		client, err := getDomainsV2Client(meta)
+		if err != nil {
+			return err
+		}
+		ctx := context.Background()
+		_, err = client.GetZone(ctx, zoneID, nil)
+		if err != nil {
+			return errors.New("zone in api not found")
+		}
 		return nil
 	}
 }

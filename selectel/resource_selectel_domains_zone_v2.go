@@ -65,11 +65,14 @@ func resourceDomainsZoneV2Create(ctx context.Context, d *schema.ResourceData, me
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	zoneName := d.Get("name").(string)
 	createOpts := &domainsV2.Zone{
 		Name: zoneName,
 	}
-	log.Print(msgCreate(objectZone, zoneName))
+
+	log.Println(msgCreate(objectZone, zoneName))
+
 	zone, err := client.CreateZone(ctx, createOpts)
 	if err != nil {
 		return diag.FromErr(errCreatingObject(objectZone, err))
@@ -88,7 +91,11 @@ func resourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, meta
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	zoneName := d.Get("name").(string)
+
+	log.Println(msgGet(objectRrset, zoneName))
+
 	optsForSearchZone := &map[string]string{
 		"filter": zoneName,
 	}
@@ -119,6 +126,9 @@ func resourceDomainsZoneV2ImportState(ctx context.Context, d *schema.ResourceDat
 	}
 
 	zoneName := d.Get("name").(string)
+
+	log.Println(msgImport(objectRrset, zoneName))
+
 	zone, err := getZoneByName(ctx, client, zoneName)
 	if err != nil {
 		return nil, err
@@ -145,6 +155,8 @@ func resourceDomainsZoneV2Update(ctx context.Context, d *schema.ResourceData, me
 	zoneID := d.Id()
 	comment := d.Get("comment").(string)
 
+	log.Println(msgUpdate(objectRrset, zoneID, comment))
+
 	err = client.UpdateZoneComment(ctx, zoneID, comment)
 	if err != nil {
 		return diag.FromErr(errUpdatingObject(objectZone, zoneID, err))
@@ -158,9 +170,14 @@ func resourceDomainsZoneV2Delete(ctx context.Context, d *schema.ResourceData, me
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	err = client.DeleteZone(ctx, d.Id())
+
+	zoneID := d.Id()
+
+	log.Println(msgDelete(objectRrset, zoneID))
+
+	err = client.DeleteZone(ctx, zoneID)
 	if err != nil {
-		return diag.FromErr(errDeletingObject(objectZone, d.Id(), err))
+		return diag.FromErr(errDeletingObject(objectZone, zoneID, err))
 	}
 
 	return nil

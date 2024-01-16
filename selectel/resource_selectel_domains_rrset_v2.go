@@ -241,3 +241,16 @@ func setRrsetToResourceData(d *schema.ResourceData, rrset *domainsV2.RRSet) erro
 
 	return nil
 }
+
+// generateListFromRecords - generate terraform TypeList from records in rrset
+func generateListFromRecords(records []domainsV2.RecordItem) []interface{} {
+	var recordsAsList []interface{}
+	for _, record := range records {
+		recordsAsList = append(recordsAsList, map[string]interface{}{
+			"content":  record.Content,
+			"disabled": record.Disabled,
+		})
+	}
+
+	return recordsAsList
+}

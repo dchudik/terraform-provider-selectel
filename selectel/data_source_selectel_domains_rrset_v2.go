@@ -5,11 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	domainsV2 "github.com/selectel/domains-go/pkg/v2"
 )
 
 var (
@@ -70,60 +68,19 @@ func dataSourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	rrsetName := d.Get("name").(string)
 	zoneID := d.Get("zone_id").(string)
 	rrsetType := d.Get("type").(string)
 
-	log.Print(msgGet(objectRrset, rrsetName))
+	log.Println(msgGet(objectRrset, fmt.Sprintf("Zone ID: %s; Rrset name: %s; Rrset type: %s", zoneID, rrsetName, rrsetType)))
+
 	rrset, err := getRrsetByNameAndType(ctx, client, zoneID, rrsetName, rrsetType)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	setRrsetToResourceData(d, rrset)
 
 	return nil
-}
-
-// generateListFromRecords - generate terraform TypeList from records in rrset
-func generateListFromRecords(records []domainsV2.RecordItem) []interface{} {
-	var recordsAsList []interface{}
-	for _, record := range records {
-		recordsAsList = append(recordsAsList, map[string]interface{}{
-			"content":  record.Content,
-			"disabled": record.Disabled,
-		})
-	}
-
-	return recordsAsList
-}
-
-func getRrsetByNameAndType(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], zoneID, rrsetName, rrsetType string) (*domainsV2.RRSet, error) {
-	optsForSearchRrset := &map[string]string{
-		"name": rrsetName,
-		"type": rrsetType,
-	}
-
-	rrsets, err := client.ListRRSets(ctx, zoneID, optsForSearchRrset)
-	if err != nil {
-		return nil, errGettingObject(objectRrset, rrsetName, err)
-	}
-
-	r, err := regexp.Compile(fmt.Sprintf("^%s.?", rrsetName))
-	if err != nil {
-		return nil, errGettingObject(objectRrset, rrsetName, err)
-	}
-
-	var rrset *domainsV2.RRSet
-	for _, rrsetInResp := range rrsets.GetItems() {
-		if match := r.MatchString(rrsetInResp.Name); match {
-			rrset = rrsetInResp
-			break
-		}
-	}
-
-	if rrset == nil {
-		return nil, errGettingObject(objectRrset, rrsetName, ErrRrsetNotFound)
-	}
-
-	return rrset, nil
 }

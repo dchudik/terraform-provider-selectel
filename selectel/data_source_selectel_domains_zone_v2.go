@@ -63,9 +63,10 @@ func dataSourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, me
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	zoneName := d.Get("name").(string)
 
-	log.Print(msgGet(objectZone, zoneName))
+	log.Println(msgGet(objectZone, zoneName))
 
 	zone, err := getZoneByName(ctx, client, zoneName)
 	if err != nil {

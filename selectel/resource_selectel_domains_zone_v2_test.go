@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -23,7 +22,7 @@ func TestAccDomainsZoneV2Basic(t *testing.T) {
 			{
 				Config: testAccDomainsZoneV2Basic(resourceZoneName, testZoneName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccDomainsZoneV2ID(fmt.Sprintf("selectel_domains_zone_v2.%[1]s", resourceZoneName)),
+					testAccDomainsZoneV2Exists(fmt.Sprintf("selectel_domains_zone_v2.%[1]s", resourceZoneName)),
 					resource.TestCheckResourceAttr(fmt.Sprintf("selectel_domains_zone_v2.%[1]s", resourceZoneName), "name", testZoneName),
 				),
 			},
@@ -32,9 +31,9 @@ func TestAccDomainsZoneV2Basic(t *testing.T) {
 }
 func testAccDomainsZoneV2Basic(resourceName, zoneName string) string {
 	return fmt.Sprintf(`
-resource "selectel_domains_zone_v2" %[1]q {
-  name = %[2]q
-}`, resourceName, zoneName)
+		resource "selectel_domains_zone_v2" %[1]q {
+			name = %[2]q
+		}`, resourceName, zoneName)
 }
 
 func testAccCheckDomainsV2ZoneDestroy(s *terraform.State) error {
@@ -47,7 +46,6 @@ func testAccCheckDomainsV2ZoneDestroy(s *terraform.State) error {
 	ctx := context.Background()
 
 	for _, rs := range s.RootModule().Resources {
-		log.Printf("RT: %s", rs.Type)
 		if rs.Type != "selectel_domains_zone_v2" {
 			continue
 		}
