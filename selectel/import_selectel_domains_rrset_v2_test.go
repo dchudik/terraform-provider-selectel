@@ -51,6 +51,7 @@ func getTestRrsetIDForImport(s *terraform.State) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("Not found rrset: %s", resourceRrsetFullName)
 	}
+
 	return fmt.Sprintf("%s/%s/%s",
 		resourceZone.Primary.Attributes["name"],
 		resourceRrset.Primary.Attributes["name"],

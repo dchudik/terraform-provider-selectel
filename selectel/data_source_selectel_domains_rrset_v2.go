@@ -80,7 +80,10 @@ func dataSourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, m
 		return diag.FromErr(err)
 	}
 
-	setRrsetToResourceData(d, rrset)
+	err = setRrsetToResourceData(d, rrset)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	return nil
 }

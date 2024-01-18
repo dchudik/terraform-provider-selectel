@@ -29,6 +29,7 @@ func TestAccDomainsZoneV2Basic(t *testing.T) {
 		},
 	})
 }
+
 func testAccDomainsZoneV2Basic(resourceName, zoneName string) string {
 	return fmt.Sprintf(`
 		resource "selectel_domains_zone_v2" %[1]q {

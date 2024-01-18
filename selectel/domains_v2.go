@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 
@@ -75,12 +76,14 @@ func getRrsetByNameAndType(ctx context.Context, client domainsV2.DNSClient[domai
 
 	var rrset *domainsV2.RRSet
 	for _, rrsetInResp := range rrsets.GetItems() {
-		if match := r.MatchString(rrsetInResp.Name); match {
+		match := r.MatchString(rrsetInResp.Name)
+		if match && string(rrsetInResp.Type) == rrsetType {
+
 			rrset = rrsetInResp
 			break
 		}
 	}
-
+	log.Println("Selected rrset:", rrset)
 	if rrset == nil {
 		return nil, errGettingObject(objectRrset, rrsetName, ErrRrsetNotFound)
 	}

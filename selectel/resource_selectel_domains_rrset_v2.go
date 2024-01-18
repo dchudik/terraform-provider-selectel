@@ -57,7 +57,8 @@ func resourceDomainsRrsetV2() *schema.Resource {
 						},
 						"disabled": {
 							Type:     schema.TypeBool,
-							Required: true,
+							Default:  false,
+							Optional: true,
 						},
 					},
 				},
@@ -96,12 +97,12 @@ func resourceDomainsRrsetV2Create(ctx context.Context, d *schema.ResourceData, m
 
 	rrset, err := client.CreateRRSet(ctx, zoneID, createOpts)
 	if err != nil {
-		return diag.FromErr(errCreatingObject(objectRecord, err))
+		return diag.FromErr(errCreatingObject(objectRrset, err))
 	}
 
 	err = setRrsetToResourceData(d, rrset)
 	if err != nil {
-		return diag.FromErr(errCreatingObject(objectRecord, err))
+		return diag.FromErr(errCreatingObject(objectRrset, err))
 	}
 
 	return nil
@@ -115,18 +116,19 @@ func resourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, met
 
 	rrsetID := d.Id()
 	zoneID := d.Get("zone_id").(string)
+	zoneIDWithRrsetID := fmt.Sprintf("zone_id: %s, rrset_id: %s", zoneID, rrsetID)
 
-	log.Print(msgGet(objectRrset, fmt.Sprintf("zone_id: %s, rrset_id: %s", zoneID, rrsetID)))
+	log.Print(msgGet(objectRrset, zoneIDWithRrsetID))
 
 	rrset, err := client.GetRRSet(ctx, zoneID, rrsetID)
 	if err != nil {
 		d.SetId("")
-		return diag.FromErr(errGettingObject(objectRrset, fmt.Sprintf("zone_id: %s, rrset_id: %s", zoneID, rrsetID), err))
+		return diag.FromErr(errGettingObject(objectRrset, zoneIDWithRrsetID, err))
 	}
 
 	err = setRrsetToResourceData(d, rrset)
 	if err != nil {
-		return diag.FromErr(errGettingObject(objectRecord, fmt.Sprintf("zone_id: %s rrset_id: %s", zoneID, rrsetID), err))
+		return diag.FromErr(errGettingObject(objectRrset, zoneIDWithRrsetID, err))
 	}
 
 	return nil
@@ -147,6 +149,8 @@ func resourceDomainsRrsetV2ImportState(ctx context.Context, d *schema.ResourceDa
 	rrsetName := parts[1]
 	rrsetType := parts[2]
 
+	log.Print(msgImport(objectRrset, fmt.Sprintf("%s/%s/%s", zoneName, rrsetName, rrsetType)))
+
 	zone, err := getZoneByName(ctx, client, zoneName)
 	if err != nil {
 		return nil, err
@@ -156,6 +160,8 @@ func resourceDomainsRrsetV2ImportState(ctx context.Context, d *schema.ResourceDa
 	if err != nil {
 		return nil, err
 	}
+
+	log.Print(msgImport(objectRrset, fmt.Sprintf("rrset_id: %s", rrset.UUID)))
 
 	err = setRrsetToResourceData(d, rrset)
 	if err != nil {
@@ -174,17 +180,16 @@ func resourceDomainsRrsetV2Update(ctx context.Context, d *schema.ResourceData, m
 
 	client, err := getDomainsV2Client(meta)
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(errUpdatingObject(objectRrset, rrsetID, err))
 	}
 
-	recordType := domainsV2.RecordType(d.Get("type").(string))
-	// TODO: added update
-	records := []domainsV2.RecordItem{}
+	if d.HasChanges("ttl", "comment", "records") {
+		recordsList := d.Get("records").([]interface{})
+		records := generateRecordsFromList(recordsList)
 
-	if d.HasChanges("type", "ttl", "comment", "managed_by", "records") {
 		updateOpts := &domainsV2.RRSet{
 			Name:      d.Get("name").(string),
-			Type:      recordType,
+			Type:      domainsV2.RecordType(d.Get("type").(string)),
 			TTL:       d.Get("ttl").(int),
 			ZoneUUID:  zoneID,
 			Comment:   d.Get("comment").(string),
@@ -193,7 +198,7 @@ func resourceDomainsRrsetV2Update(ctx context.Context, d *schema.ResourceData, m
 		}
 		err = client.UpdateRRSet(ctx, zoneID, rrsetID, updateOpts)
 		if err != nil {
-			return diag.FromErr(errUpdatingObject(objectRecord, d.Id(), err))
+			return diag.FromErr(errUpdatingObject(objectRrset, rrsetID, err))
 		}
 	}
 
@@ -202,15 +207,14 @@ func resourceDomainsRrsetV2Update(ctx context.Context, d *schema.ResourceData, m
 
 func resourceDomainsRrsetV2Delete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	zoneID := d.Get("zone_id").(string)
+	rrsetID := d.Id()
 	selMutexKV.Lock(zoneID)
 	defer selMutexKV.Unlock(zoneID)
 
 	client, err := getDomainsV2Client(meta)
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(errDeletingObject(objectRrset, rrsetID, err))
 	}
-
-	rrsetID := d.Id()
 
 	log.Print(msgDelete(objectRrset, fmt.Sprintf("zone_id: %s, rrset_id: %s", zoneID, rrsetID)))
 
@@ -235,9 +239,9 @@ func setRrsetToResourceData(d *schema.ResourceData, rrset *domainsV2.RRSet) erro
 	return nil
 }
 
-// generateListFromRecords - generate terraform TypeList from records in rrset
+// generateListFromRecords - generate terraform TypeList from records in rrset.
 func generateListFromRecords(records []domainsV2.RecordItem) []interface{} {
-	var recordsAsList []interface{}
+	recordsAsList := []interface{}{}
 	for _, record := range records {
 		recordsAsList = append(recordsAsList, map[string]interface{}{
 			"content":  record.Content,
@@ -248,7 +252,7 @@ func generateListFromRecords(records []domainsV2.RecordItem) []interface{} {
 	return recordsAsList
 }
 
-// generateRecordsFromList - generate records for Rrset from terraform TypeList
+// generateRecordsFromList - generate records for Rrset from terraform TypeList.
 func generateRecordsFromList(recordsList []interface{}) []domainsV2.RecordItem {
 	records := []domainsV2.RecordItem{}
 	for _, recordItem := range recordsList {

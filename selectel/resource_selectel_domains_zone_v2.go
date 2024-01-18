@@ -94,22 +94,12 @@ func resourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, meta
 
 	zoneName := d.Get("name").(string)
 
-	log.Println(msgGet(objectRrset, zoneName))
+	log.Println(msgGet(objectZone, zoneName))
 
-	optsForSearchZone := &map[string]string{
-		"filter": zoneName,
-	}
-	zones, err := client.ListZones(ctx, optsForSearchZone)
+	zone, err := getZoneByName(ctx, client, zoneName)
 	if err != nil {
 		return diag.FromErr(errGettingObject(objectZone, zoneName, err))
 	}
-	if zones.GetCount() == 0 {
-		return diag.FromErr(errGettingObject(objectZone, zoneName, ErrZoneNotFound))
-	}
-	if zones.GetCount() > 1 {
-		return diag.FromErr(errGettingObject(objectZone, zoneName, ErrFoundMultipleZones))
-	}
-	zone := zones.GetItems()[0]
 
 	err = setZoneToResourceData(d, zone)
 	if err != nil {
@@ -125,9 +115,9 @@ func resourceDomainsZoneV2ImportState(ctx context.Context, d *schema.ResourceDat
 		return nil, err
 	}
 
-	zoneName := d.Get("name").(string)
+	zoneName := d.Id()
 
-	log.Println(msgImport(objectRrset, zoneName))
+	log.Println(msgImport(objectZone, zoneName))
 
 	zone, err := getZoneByName(ctx, client, zoneName)
 	if err != nil {
@@ -143,23 +133,33 @@ func resourceDomainsZoneV2ImportState(ctx context.Context, d *schema.ResourceDat
 }
 
 func resourceDomainsZoneV2Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	if !d.HasChange("comment") {
-		return nil
-	}
+	zoneID := d.Id()
 
 	client, err := getDomainsV2Client(meta)
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(errUpdatingObject(objectZone, zoneID, err))
 	}
 
-	zoneID := d.Id()
-	comment := d.Get("comment").(string)
+	if d.HasChange("comment") {
+		comment := d.Get("comment").(string)
 
-	log.Println(msgUpdate(objectRrset, zoneID, comment))
+		log.Println(msgUpdate(objectZone, zoneID, comment))
 
-	err = client.UpdateZoneComment(ctx, zoneID, comment)
-	if err != nil {
-		return diag.FromErr(errUpdatingObject(objectZone, zoneID, err))
+		err = client.UpdateZoneComment(ctx, zoneID, comment)
+		if err != nil {
+			return diag.FromErr(errUpdatingObject(objectZone, zoneID, err))
+		}
+	}
+
+	if d.HasChange("disabled") {
+		disabled := d.Get("disabled").(bool)
+
+		log.Println(msgUpdate(objectZone, zoneID, disabled))
+
+		err = client.UpdateZoneState(ctx, zoneID, disabled)
+		if err != nil {
+			return diag.FromErr(errUpdatingObject(objectZone, zoneID, err))
+		}
 	}
 
 	return nil
@@ -173,7 +173,7 @@ func resourceDomainsZoneV2Delete(ctx context.Context, d *schema.ResourceData, me
 
 	zoneID := d.Id()
 
-	log.Println(msgDelete(objectRrset, zoneID))
+	log.Println(msgDelete(objectZone, zoneID))
 
 	err = client.DeleteZone(ctx, zoneID)
 	if err != nil {

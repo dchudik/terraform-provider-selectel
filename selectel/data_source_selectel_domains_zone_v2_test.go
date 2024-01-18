@@ -52,6 +52,7 @@ func testAccDomainsZoneV2Exists(name string) resource.TestCheckFunc {
 		if err != nil {
 			return errors.New("zone in api not found")
 		}
+
 		return nil
 	}
 }
