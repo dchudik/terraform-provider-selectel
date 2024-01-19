@@ -36,22 +36,9 @@ resource "selectel_domains_rrset_v2" "txt_tf_basic_ru" {
     content  = "\"Hello terraform\""
     disabled = false
   }
+  records {
+    content  = "\"Hello also terraform\""
+    disabled = false
+  }
 }
-
-# Edit zone name for get information about zone from your project
-variable "zone_name_for_data" {
-  default = "tf-provider-test-data-basic.ru."
-}
-
-data "selectel_domains_zone_v2" "data_tf_selectel_basic_ru" {
-  name = var.zone_name_for_data
-}
-
-data "selectel_domains_rrset_v2" "data_txt_tf_selectel_basic_ru" {
-  name    = format("txt.%s", var.zone_name_for_data)
-  zone_id = data.selectel_domains_zone_v2.data_tf_selectel_basic_ru.id
-  type    = "TXT"
-}
-
-
 
