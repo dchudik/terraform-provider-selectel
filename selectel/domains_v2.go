@@ -37,7 +37,7 @@ func getDomainsV2Client(meta interface{}) (domainsV2.DNSClient[domainsV2.Zone, d
 
 func getZoneByName(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], zoneName string) (*domainsV2.Zone, error) {
 	optsForSearchZone := &map[string]string{
-		"name": zoneName,
+		"filter": zoneName,
 	}
 	zones, err := client.ListZones(ctx, optsForSearchZone)
 	if err != nil {
@@ -60,8 +60,8 @@ func getZoneByName(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zon
 
 func getRrsetByNameAndType(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], zoneID, rrsetName, rrsetType string) (*domainsV2.RRSet, error) {
 	optsForSearchRrset := &map[string]string{
-		"name": rrsetName,
-		"type": rrsetType,
+		"name":        rrsetName,
+		"rrset_types": rrsetType,
 	}
 
 	rrsets, err := client.ListRRSets(ctx, zoneID, optsForSearchRrset)
