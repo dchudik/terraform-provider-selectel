@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 
 	domainsV2 "github.com/selectel/domains-go/pkg/v2"
 )
@@ -36,37 +36,42 @@ func getDomainsV2Client(meta interface{}) (domainsV2.DNSClient[domainsV2.Zone, d
 }
 
 func getZoneByName(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], zoneName string) (*domainsV2.Zone, error) {
-	optsForSearchZone := &map[string]string{
+	optsForSearchZone := map[string]string{
 		"filter": zoneName,
+		"limit":  "1000",
+		"offset": "0",
 	}
-	zones, err := client.ListZones(ctx, optsForSearchZone)
-	if err != nil {
-		return nil, err
-	}
-
 	r, err := regexp.Compile(fmt.Sprintf("^%s.?", zoneName))
 	if err != nil {
 		return nil, err
 	}
 
-	for _, zone := range zones.GetItems() {
-		if r.MatchString(zone.Name) {
-			return zone, nil
+	for {
+		zones, err := client.ListZones(ctx, &optsForSearchZone)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, zone := range zones.GetItems() {
+			if r.MatchString(zone.Name) {
+				return zone, nil
+			}
+		}
+		optsForSearchZone["offset"] = strconv.Itoa(zones.GetNextOffset())
+		if zones.GetNextOffset() == 0 {
+			break
 		}
 	}
 
-	return nil, ErrZoneNotFound
+	return nil, errGettingObject(objectZone, zoneName, ErrZoneNotFound)
 }
 
 func getRrsetByNameAndType(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], zoneID, rrsetName, rrsetType string) (*domainsV2.RRSet, error) {
-	optsForSearchRrset := &map[string]string{
+	optsForSearchRrset := map[string]string{
 		"name":        rrsetName,
 		"rrset_types": rrsetType,
-	}
-
-	rrsets, err := client.ListRRSets(ctx, zoneID, optsForSearchRrset)
-	if err != nil {
-		return nil, errGettingObject(objectRrset, rrsetName, err)
+		"limit":       "1000",
+		"offset":      "0",
 	}
 
 	r, err := regexp.Compile(fmt.Sprintf("^%s.?", rrsetName))
@@ -74,19 +79,21 @@ func getRrsetByNameAndType(ctx context.Context, client domainsV2.DNSClient[domai
 		return nil, errGettingObject(objectRrset, rrsetName, err)
 	}
 
-	var rrset *domainsV2.RRSet
-	for _, rrsetInResp := range rrsets.GetItems() {
-		match := r.MatchString(rrsetInResp.Name)
-		if match && string(rrsetInResp.Type) == rrsetType {
-
-			rrset = rrsetInResp
+	for {
+		rrsets, err := client.ListRRSets(ctx, zoneID, &optsForSearchRrset)
+		if err != nil {
+			return nil, errGettingObject(objectRrset, rrsetName, err)
+		}
+		for _, rrset := range rrsets.GetItems() {
+			if r.MatchString(rrset.Name) && string(rrset.Type) == rrsetType {
+				return rrset, nil
+			}
+		}
+		optsForSearchRrset["offset"] = strconv.Itoa(rrsets.GetNextOffset())
+		if rrsets.GetNextOffset() == 0 {
 			break
 		}
 	}
-	log.Println("Selected rrset:", rrset)
-	if rrset == nil {
-		return nil, errGettingObject(objectRrset, rrsetName, ErrRrsetNotFound)
-	}
 
-	return rrset, nil
+	return nil, errGettingObject(objectRrset, fmt.Sprintf("Name: %s. Type: %s.", rrsetName, rrsetType), ErrRrsetNotFound)
 }

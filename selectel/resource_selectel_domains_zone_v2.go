@@ -95,7 +95,7 @@ func resourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, meta
 	zoneName := d.Get("name").(string)
 
 	log.Println(msgGet(objectZone, zoneName))
-
+	// TODO: maybe get by ID
 	zone, err := getZoneByName(ctx, client, zoneName)
 	if err != nil {
 		return diag.FromErr(errGettingObject(objectZone, zoneName, err))
