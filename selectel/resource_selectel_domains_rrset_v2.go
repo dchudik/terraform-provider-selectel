@@ -47,7 +47,7 @@ func resourceDomainsRrsetV2() *schema.Resource {
 				Required: true,
 			},
 			"records": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -78,8 +78,8 @@ func resourceDomainsRrsetV2Create(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	recordType := domainsV2.RecordType(d.Get("type").(string))
-	recordsList := d.Get("records").([]interface{})
-	records := generateRecordsFromList(recordsList)
+	recordsSet := d.Get("records").(*schema.Set)
+	records := generateRecordsFromSet(recordsSet)
 	createOpts := &domainsV2.RRSet{
 		Name:     d.Get("name").(string),
 		Type:     recordType,
@@ -184,8 +184,8 @@ func resourceDomainsRrsetV2Update(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if d.HasChanges("ttl", "comment", "records") {
-		recordsList := d.Get("records").([]interface{})
-		records := generateRecordsFromList(recordsList)
+		recordsSet := d.Get("records").(*schema.Set)
+		records := generateRecordsFromSet(recordsSet)
 
 		updateOpts := &domainsV2.RRSet{
 			Name:      d.Get("name").(string),
@@ -234,13 +234,13 @@ func setRrsetToResourceData(d *schema.ResourceData, rrset *domainsV2.RRSet) erro
 	d.Set("ttl", rrset.TTL)
 	d.Set("type", rrset.Type)
 	d.Set("zone_id", rrset.ZoneUUID)
-	d.Set("records", generateListFromRecords(rrset.Records))
+	d.Set("records", generateSetFromRecords(rrset.Records))
 
 	return nil
 }
 
-// generateListFromRecords - generate terraform TypeList from records in rrset.
-func generateListFromRecords(records []domainsV2.RecordItem) []interface{} {
+// generateSetFromRecords - generate terraform TypeList from records in rrset.
+func generateSetFromRecords(records []domainsV2.RecordItem) []interface{} {
 	recordsAsList := []interface{}{}
 	for _, record := range records {
 		recordsAsList = append(recordsAsList, map[string]interface{}{
@@ -252,10 +252,10 @@ func generateListFromRecords(records []domainsV2.RecordItem) []interface{} {
 	return recordsAsList
 }
 
-// generateRecordsFromList - generate records for Rrset from terraform TypeList.
-func generateRecordsFromList(recordsList []interface{}) []domainsV2.RecordItem {
+// generateRecordsFromSet - generate records for Rrset from terraform TypeList.
+func generateRecordsFromSet(recordsSet *schema.Set) []domainsV2.RecordItem {
 	records := []domainsV2.RecordItem{}
-	for _, recordItem := range recordsList {
+	for _, recordItem := range recordsSet.List() {
 		if record, isOk := recordItem.(map[string]interface{}); isOk {
 			records = append(records, domainsV2.RecordItem{
 				Content:  record["content"].(string),
