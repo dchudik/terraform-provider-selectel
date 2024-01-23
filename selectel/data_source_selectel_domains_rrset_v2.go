@@ -73,7 +73,8 @@ func dataSourceDomainsRrsetV2Read(ctx context.Context, d *schema.ResourceData, m
 	zoneID := d.Get("zone_id").(string)
 	rrsetType := d.Get("type").(string)
 
-	log.Println(msgGet(objectRrset, fmt.Sprintf("Zone ID: %s; Rrset name: %s; Rrset type: %s", zoneID, rrsetName, rrsetType)))
+	zoneIDWithRrsetNameAndType := fmt.Sprintf("zone_id: %s, rrset_name: %s, rrset_type: %s", zoneID, rrsetName, rrsetType)
+	log.Println(msgGet(objectRrset, zoneIDWithRrsetNameAndType))
 
 	rrset, err := getRrsetByNameAndType(ctx, client, zoneID, rrsetName, rrsetType)
 	if err != nil {

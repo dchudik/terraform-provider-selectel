@@ -161,8 +161,6 @@ func resourceDomainsRrsetV2ImportState(ctx context.Context, d *schema.ResourceDa
 		return nil, err
 	}
 
-	log.Print(msgImport(objectRrset, fmt.Sprintf("rrset_id: %s", rrset.UUID)))
-
 	err = setRrsetToResourceData(d, rrset)
 	if err != nil {
 		return nil, err
