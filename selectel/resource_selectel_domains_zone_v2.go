@@ -3,6 +3,7 @@ package selectel
 import (
 	"context"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -23,6 +24,11 @@ func resourceDomainsZoneV2() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"project_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"comment": {
 				Type:     schema.TypeString,
@@ -48,10 +54,6 @@ func resourceDomainsZoneV2() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"project_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"disabled": {
 				Type:     schema.TypeBool,
 				Computed: true,
@@ -61,7 +63,7 @@ func resourceDomainsZoneV2() *schema.Resource {
 }
 
 func resourceDomainsZoneV2Create(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := getDomainsV2Client(meta)
+	client, err := getDomainsV2Client(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -87,7 +89,7 @@ func resourceDomainsZoneV2Create(ctx context.Context, d *schema.ResourceData, me
 }
 
 func resourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := getDomainsV2Client(meta)
+	client, err := getDomainsV2Client(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -109,7 +111,7 @@ func resourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, meta
 }
 
 func resourceDomainsZoneV2ImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	client, err := getDomainsV2Client(meta)
+	client, err := getDomainsV2Client(d, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +136,7 @@ func resourceDomainsZoneV2ImportState(ctx context.Context, d *schema.ResourceDat
 func resourceDomainsZoneV2Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	zoneID := d.Id()
 
-	client, err := getDomainsV2Client(meta)
+	client, err := getDomainsV2Client(d, meta)
 	if err != nil {
 		return diag.FromErr(errUpdatingObject(objectZone, zoneID, err))
 	}
@@ -165,7 +167,7 @@ func resourceDomainsZoneV2Update(ctx context.Context, d *schema.ResourceData, me
 }
 
 func resourceDomainsZoneV2Delete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := getDomainsV2Client(meta)
+	client, err := getDomainsV2Client(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -183,7 +185,7 @@ func resourceDomainsZoneV2Delete(ctx context.Context, d *schema.ResourceData, me
 }
 
 func setZoneToResourceData(d *schema.ResourceData, zone *domainsV2.Zone) error {
-	d.SetId(zone.UUID)
+	d.SetId(zone.ID)
 	d.Set("name", zone.Name)
 	d.Set("comment", zone.Comment)
 	d.Set("created_at", zone.CreatedAt.Format(time.RFC3339))
@@ -191,7 +193,7 @@ func setZoneToResourceData(d *schema.ResourceData, zone *domainsV2.Zone) error {
 	d.Set("delegation_checked_at", zone.DelegationCheckedAt.Format(time.RFC3339))
 	d.Set("last_check_status", zone.LastCheckStatus)
 	d.Set("last_delegated_at", zone.LastDelegatedAt.Format(time.RFC3339))
-	d.Set("project_id", zone.ProjectID)
+	d.Set("project_id", strings.ReplaceAll(zone.ProjectID, "-", ""))
 	d.Set("disabled", zone.Disabled)
 
 	return nil
