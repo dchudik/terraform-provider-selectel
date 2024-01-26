@@ -32,7 +32,7 @@ func resourceDomainsZoneV2() *schema.Resource {
 			},
 			"comment": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
 			},
 			"created_at": {
 				Type:     schema.TypeString,
@@ -56,7 +56,8 @@ func resourceDomainsZoneV2() *schema.Resource {
 			},
 			"disabled": {
 				Type:     schema.TypeBool,
-				Computed: true,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -69,15 +70,33 @@ func resourceDomainsZoneV2Create(ctx context.Context, d *schema.ResourceData, me
 	}
 
 	zoneName := d.Get("name").(string)
-	createOpts := &domainsV2.Zone{
+	createOpts := domainsV2.Zone{
 		Name: zoneName,
 	}
 
 	log.Println(msgCreate(objectZone, zoneName))
 
-	zone, err := client.CreateZone(ctx, createOpts)
+	zone, err := client.CreateZone(ctx, &createOpts)
 	if err != nil {
 		return diag.FromErr(errCreatingObject(objectZone, err))
+	}
+	// Update comment after creating
+	// because set comment in creating request not supporting
+	if v, ok := d.GetOk("comment"); ok {
+		comment := v.(string)
+		err = client.UpdateZoneComment(ctx, zone.ID, comment)
+		if err != nil {
+			return diag.FromErr(errUpdatingObject(objectZone, zone.ID, err))
+		}
+	}
+	// Update disabled after creating
+	// because set disabled in creating request not supporting
+	if v, ok := d.GetOk("disabled"); ok {
+		disabled := v.(bool)
+		err = client.UpdateZoneState(ctx, zone.ID, disabled)
+		if err != nil {
+			return diag.FromErr(errUpdatingObject(objectZone, zone.ID, err))
+		}
 	}
 
 	err = setZoneToResourceData(d, zone)
@@ -142,8 +161,10 @@ func resourceDomainsZoneV2Update(ctx context.Context, d *schema.ResourceData, me
 	}
 
 	if d.HasChange("comment") {
-		comment := d.Get("comment").(string)
-
+		comment := ""
+		if v, ok := d.GetOk("comment"); ok {
+			comment = v.(string)
+		}
 		log.Println(msgUpdate(objectZone, zoneID, comment))
 
 		err = client.UpdateZoneComment(ctx, zoneID, comment)
@@ -153,8 +174,10 @@ func resourceDomainsZoneV2Update(ctx context.Context, d *schema.ResourceData, me
 	}
 
 	if d.HasChange("disabled") {
-		disabled := d.Get("disabled").(bool)
-
+		disabled := false
+		if v, ok := d.GetOk("disabled"); ok {
+			disabled = v.(bool)
+		}
 		log.Println(msgUpdate(objectZone, zoneID, disabled))
 
 		err = client.UpdateZoneState(ctx, zoneID, disabled)

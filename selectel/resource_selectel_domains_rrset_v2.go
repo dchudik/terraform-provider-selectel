@@ -84,7 +84,7 @@ func resourceDomainsRrsetV2Create(ctx context.Context, d *schema.ResourceData, m
 	recordType := domainsV2.RecordType(d.Get("type").(string))
 	recordsSet := d.Get("records").(*schema.Set)
 	records := generateRecordsFromSet(recordsSet)
-	createOpts := &domainsV2.RRSet{
+	createOpts := domainsV2.RRSet{
 		Name:    d.Get("name").(string),
 		Type:    recordType,
 		TTL:     d.Get("ttl").(int),
@@ -99,7 +99,7 @@ func resourceDomainsRrsetV2Create(ctx context.Context, d *schema.ResourceData, m
 		createOpts.ManagedBy = managedBy.(string)
 	}
 
-	rrset, err := client.CreateRRSet(ctx, zoneID, createOpts)
+	rrset, err := client.CreateRRSet(ctx, zoneID, &createOpts)
 	if err != nil {
 		return diag.FromErr(errCreatingObject(objectRrset, err))
 	}
@@ -189,16 +189,18 @@ func resourceDomainsRrsetV2Update(ctx context.Context, d *schema.ResourceData, m
 		recordsSet := d.Get("records").(*schema.Set)
 		records := generateRecordsFromSet(recordsSet)
 
-		updateOpts := &domainsV2.RRSet{
+		updateOpts := domainsV2.RRSet{
 			Name:      d.Get("name").(string),
 			Type:      domainsV2.RecordType(d.Get("type").(string)),
 			TTL:       d.Get("ttl").(int),
 			ZoneID:    zoneID,
-			Comment:   d.Get("comment").(string),
 			ManagedBy: d.Get("managed_by").(string),
 			Records:   records,
 		}
-		err = client.UpdateRRSet(ctx, zoneID, rrsetID, updateOpts)
+		if comment, ok := d.GetOk("comment"); ok {
+			updateOpts.Comment = comment.(string)
+		}
+		err = client.UpdateRRSet(ctx, zoneID, rrsetID, &updateOpts)
 		if err != nil {
 			return diag.FromErr(errUpdatingObject(objectRrset, rrsetID, err))
 		}
