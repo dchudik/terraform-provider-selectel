@@ -40,7 +40,7 @@ func resourceDomainsRrsetV2() *schema.Resource {
 			},
 			"comment": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
 			},
 			"managed_by": {
 				Type:     schema.TypeString,
