@@ -22,6 +22,10 @@ func dataSourceDomainsZoneV2() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"project_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"comment": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -46,10 +50,6 @@ func dataSourceDomainsZoneV2() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"project_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"disabled": {
 				Type:     schema.TypeBool,
 				Computed: true,
@@ -59,7 +59,7 @@ func dataSourceDomainsZoneV2() *schema.Resource {
 }
 
 func dataSourceDomainsZoneV2Read(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, err := getDomainsV2Client(meta)
+	client, err := getDomainsV2Client(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
 	}
