@@ -35,7 +35,7 @@ resource "selectel_domains_zone_v2" "zone_1" {
 
 * `comment` - (Optional) Comment for zone.
 
-* `disabled` - (Optional) Status zone for service (disable or enable).
+* `disabled` - (Optional) Set zone available or not.
 
 ## Attributes Reference
 

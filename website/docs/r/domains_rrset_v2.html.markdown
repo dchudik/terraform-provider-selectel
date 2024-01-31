@@ -15,7 +15,7 @@ Creates and manages a rrset in DNS Hosting using public API v2. For more informa
 ### A RRSet
 
 ```hcl
-resource "selectel_domains_rrset_v2" "a_record_1" {
+resource "selectel_domains_rrset_v2" "a_rrset_1" {
   zone_id = "zone_id"
   name    = "a.example.com."
   type    = "A"
@@ -34,7 +34,7 @@ resource "selectel_domains_rrset_v2" "a_record_1" {
 ### AAAA RRSet
 
 ```hcl
-resource "selectel_domains_rrset_v2" "aaaa_record_1" {
+resource "selectel_domains_rrset_v2" "aaaa_rrset_1" {
   zone_id   = "zone_id"
   name      = "aaaa.example.com."
   type      = "AAAA"
@@ -49,7 +49,7 @@ resource "selectel_domains_rrset_v2" "aaaa_record_1" {
 ### TXT RRSet
 
 ```hcl
-resource "selectel_domains_rrset_v2" "txt_record_1" {
+resource "selectel_domains_rrset_v2" "txt_rrset_1" {
   zone_id   = "zone_id"
   name      = "txt.example.com."
   type      = "TXT"
@@ -63,7 +63,7 @@ resource "selectel_domains_rrset_v2" "txt_record_1" {
 ### CNAME RRSet
 
 ```hcl
-resource "selectel_domains_rrset_v2" "cname_record_1" {
+resource "selectel_domains_rrset_v2" "cname_rrset_1" {
   zone_id   = "zone_id"
   name      = "cname.example.com."
   type      = "CNAME"
@@ -77,7 +77,7 @@ resource "selectel_domains_rrset_v2" "cname_record_1" {
 ### NS RRSet
 
 ```hcl
-resource "selectel_domains_rrset_v2" "ns_record_1" {
+resource "selectel_domains_rrset_v2" "ns_rrset_1" {
   zone_id   = "zone_id"
   name      = "example.com."
   type      = "NS"
@@ -93,7 +93,7 @@ resource "selectel_domains_rrset_v2" "ns_record_1" {
 Content includes: "priority host"
 
 ```hcl
-resource "selectel_domains_rrset_v2" "mx_record_1" {
+resource "selectel_domains_rrset_v2" "mx_rrset_1" {
   zone_id   = "zone_id"
   name      = "mx.example.com."
   type      = "MX"
@@ -109,7 +109,7 @@ resource "selectel_domains_rrset_v2" "mx_record_1" {
 Content includes: "priority weight port target"
 
 ```hcl
-resource "selectel_domains_record_v1" "srv_record_1" {
+resource "selectel_domains_rrset_v2" "srv_rrset_1" {
   zone_id   = "zone_id"
   name      = "_sip._tcp.example.com."
   type      = "SRV"
@@ -125,7 +125,7 @@ resource "selectel_domains_record_v1" "srv_record_1" {
 Content includes: "algorithm fingerprint_type fingerprint"
 
 ```hcl
-resource "selectel_domains_record_v1" "sshfp_record_1" {
+resource "selectel_domains_rrset_v2" "sshfp_rrset_1" {
   zone_id    = "zone_id"
   name       = "sshfp.example.com."
   type       = "SSHFP"
@@ -139,7 +139,7 @@ resource "selectel_domains_record_v1" "sshfp_record_1" {
 ### ALIAS RRSet
 
 ```hcl
-resource "selectel_domains_record_v1" "alias_record_1" {
+resource "selectel_domains_rrset_v2" "alias_rrset_1" {
   zone_id   = "zone_id"
   name      = "example1.com."
   type      = "ALIAS"
@@ -155,7 +155,7 @@ resource "selectel_domains_record_v1" "alias_record_1" {
 Content includes: "flag tag value"
 
 ```hcl
-resource "selectel_domains_record_v1" "caa_record_1" {
+resource "selectel_domains_rrset_v2" "caa_rrset_1" {
   zone_id   = "zone_id"
   name      = "example.com."
   type      = "CAA"
@@ -170,11 +170,11 @@ resource "selectel_domains_record_v1" "caa_record_1" {
 
 * `zone_id` - (Required) Zone ID.
 
-* `name` - (Required) Name of the zone rrset. The name format depends on the record type, see the examples above.
+* `name` - (Required) Name of the zone rrset. The name format depends on the rrset type, see the examples above.
 
 * `type` - (Required) Type of the rrset.
 
-* `ttl` - (Required) Time-to-live for the record in seconds. The available range is from 60 to 604800.
+* `ttl` - (Required) Time-to-live for the rrset in seconds. The available range is from 60 to 604800.
 
 * `records` - (Required) Set of records:
   
@@ -194,7 +194,7 @@ resource "selectel_domains_record_v1" "caa_record_1" {
 
 * `type` - Type of the rrset.
 
-* `ttl` - Time-to-live for the record in seconds.
+* `ttl` - Time-to-live for the rrset in seconds.
 
 * `records` - Set of records:
   
