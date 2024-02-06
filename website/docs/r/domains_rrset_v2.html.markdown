@@ -182,7 +182,7 @@ resource "selectel_domains_rrset_v2" "caa_rrset_1" {
 
   * `disabled` - (Optional, default: false) Shows if record available or not.
 
-* `project_id` - (Optional) Selectel project ID.
+* `project_id` - (Required) Selectel project ID.
 
 * `comment` - (Optional) Comment for RRSet.
 

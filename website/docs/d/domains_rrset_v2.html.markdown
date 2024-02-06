@@ -39,7 +39,7 @@ data "selectel_domains_rrset_v2" "rrset_1" {
 
 * `zone_id` - (Required) Zone ID.
 
-* `project_id` - (Optional) Selectel project ID.
+* `project_id` - (Required) Selectel project ID.
 
 ## Attributes Reference
 
