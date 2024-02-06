@@ -18,10 +18,7 @@ var ErrProjectIDNotSetupForDNSV2 = errors.New("env variable SEL_PROJECT_ID or va
 
 func getDomainsV2Client(d *schema.ResourceData, meta interface{}) (domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], error) {
 	config := meta.(*Config)
-	projectID, err := getProjectIDFromResourceOrConfig(d, config)
-	if err != nil {
-		return nil, fmt.Errorf("can't get projectID for domains v2: %w", err)
-	}
+	projectID := d.Get("project_id").(string)
 	selvpcClient, err := config.GetSelVPCClientWithProjectScope(projectID)
 	if err != nil {
 		return nil, fmt.Errorf("can't get selvpc client for domains v2: %w", err)
@@ -36,18 +33,6 @@ func getDomainsV2Client(d *schema.ResourceData, meta interface{}) (domainsV2.DNS
 	domainsClient := domainsV2.NewClient(defaultAPIURL, httpClient, hdrs)
 
 	return domainsClient, nil
-}
-
-func getProjectIDFromResourceOrConfig(d *schema.ResourceData, config *Config) (string, error) {
-	projectID := config.ProjectID
-	if v, ok := d.GetOk("project_id"); ok {
-		projectID = v.(string)
-	}
-	if projectID == "" {
-		return "", ErrProjectIDNotSetupForDNSV2
-	}
-
-	return projectID, nil
 }
 
 func getZoneByName(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], zoneName string) (*domainsV2.Zone, error) {

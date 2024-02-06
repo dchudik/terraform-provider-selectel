@@ -39,7 +39,7 @@ func resourceDomainsRRSetV2() *schema.Resource {
 			},
 			"project_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"comment": {
@@ -77,8 +77,6 @@ func resourceDomainsRRSetV2() *schema.Resource {
 
 func resourceDomainsRRSetV2Create(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	zoneID := d.Get("zone_id").(string)
-	selMutexKV.Lock(zoneID)
-	defer selMutexKV.Unlock(zoneID)
 
 	client, err := getDomainsV2Client(d, meta)
 	if err != nil {
@@ -143,6 +141,12 @@ func resourceDomainsRRSetV2Read(ctx context.Context, d *schema.ResourceData, met
 }
 
 func resourceDomainsRRSetV2ImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	config := meta.(*Config)
+	if config.ProjectID == "" {
+		return nil, errors.New("SEL_PROJECT_ID must be set for the resource import")
+	}
+	d.Set("project_id", config.ProjectID)
+
 	client, err := getDomainsV2Client(d, meta)
 	if err != nil {
 		return nil, err
@@ -181,9 +185,6 @@ func resourceDomainsRRSetV2Update(ctx context.Context, d *schema.ResourceData, m
 	rrsetID := d.Id()
 	zoneID := d.Get("zone_id").(string)
 
-	selMutexKV.Lock(zoneID)
-	defer selMutexKV.Unlock(zoneID)
-
 	client, err := getDomainsV2Client(d, meta)
 	if err != nil {
 		return diag.FromErr(errUpdatingObject(objectRRSet, rrsetID, err))
@@ -216,8 +217,6 @@ func resourceDomainsRRSetV2Update(ctx context.Context, d *schema.ResourceData, m
 func resourceDomainsRRSetV2Delete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	zoneID := d.Get("zone_id").(string)
 	rrsetID := d.Id()
-	selMutexKV.Lock(zoneID)
-	defer selMutexKV.Unlock(zoneID)
 
 	client, err := getDomainsV2Client(d, meta)
 	if err != nil {

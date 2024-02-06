@@ -11,6 +11,7 @@ import (
 )
 
 func TestAccDomainsRRSetV2ImportBasic(t *testing.T) {
+	projectName := acctest.RandomWithPrefix("tf-acc")
 	testZoneName := fmt.Sprintf("%s.xyz.", acctest.RandomWithPrefix("tf-acc"))
 	testRRSetName := fmt.Sprintf("%[1]s.%[2]s", acctest.RandomWithPrefix("tf-acc"), testZoneName)
 	testRRSetType := domainsV2.TXT
@@ -18,15 +19,17 @@ func TestAccDomainsRRSetV2ImportBasic(t *testing.T) {
 	testRRSetContent := fmt.Sprintf("\"%[1]s\"", acctest.RandString(16))
 	fullResourceName := fmt.Sprintf("selectel_domains_rrset_v2.%[1]s", resourceRRSetName)
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccSelectelPreCheckWithProjectID(t) },
+		PreCheck:          func() { testAccSelectelPreCheck(t) },
 		ProviderFactories: testAccProviders,
-		CheckDestroy:      testAccCheckDomainsV2ZoneDestroy,
+		CheckDestroy:      testAccCheckVPCV2ProjectDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDomainsRRSetV2WithZoneBasic(
+					projectName,
 					resourceRRSetName, testRRSetName, string(testRRSetType), testRRSetContent, testRRSetTTL,
 					resourceZoneName, testZoneName,
 				),
+				Check: testAccCheckSelectelImportEnv(fullResourceName),
 			},
 			{
 				ImportStateIdFunc: getTestRRSetIDForImport,

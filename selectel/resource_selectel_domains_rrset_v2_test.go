@@ -14,6 +14,7 @@ import (
 )
 
 func TestAccDomainsRRSetV2Basic(t *testing.T) {
+	projectName := acctest.RandomWithPrefix("tf-acc")
 	testZoneName := fmt.Sprintf("%s.ru.", acctest.RandomWithPrefix("tf-acc"))
 	testRRSetName := fmt.Sprintf("%[1]s.%[2]s", acctest.RandomWithPrefix("tf-acc"), testZoneName)
 	testRRSetType := domainsV2.TXT
@@ -23,12 +24,12 @@ func TestAccDomainsRRSetV2Basic(t *testing.T) {
 	resourceRRSetName := "rrset_tf_acc_test_1"
 	dataSourceRRSetName := fmt.Sprintf("selectel_domains_rrset_v2.%[1]s", resourceRRSetName)
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccSelectelPreCheckWithProjectID(t) },
+		PreCheck:          func() { testAccSelectelPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckDomainsV2ZoneDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDomainsRRSetV2WithZoneBasic(resourceRRSetName, testRRSetName, string(testRRSetType), testRRSetContent, testRRSetTTL, resourceZoneName, testZoneName),
+				Config: testAccDomainsRRSetV2WithZoneBasic(projectName, resourceRRSetName, testRRSetName, string(testRRSetType), testRRSetContent, testRRSetTTL, resourceZoneName, testZoneName),
 				Check: resource.ComposeTestCheckFunc(
 					testAccDomainsRRSetV2ID(dataSourceRRSetName),
 					resource.TestCheckResourceAttr(dataSourceRRSetName, "name", testRRSetName),
@@ -40,7 +41,7 @@ func TestAccDomainsRRSetV2Basic(t *testing.T) {
 	})
 }
 
-func testAccDomainsRRSetV2WithZoneBasic(resourceRRSetName, rrsetName, rrsetType, rrsetContent string, ttl int, resourceZoneName, zoneName string) string {
+func testAccDomainsRRSetV2WithZoneBasic(projectName, resourceRRSetName, rrsetName, rrsetType, rrsetContent string, ttl int, resourceZoneName, zoneName string) string {
 	return fmt.Sprintf(`
 	%[7]s
 
@@ -49,11 +50,12 @@ func testAccDomainsRRSetV2WithZoneBasic(resourceRRSetName, rrsetName, rrsetType,
 		type = %[3]q
 		ttl = %[4]d
 		zone_id = selectel_domains_zone_v2.%[6]s.id
+		project_id = "${selectel_vpc_project_v2.project_tf_acc_test_1.id}"
 		records {
 			content = %[5]q
 			disabled = false
 		}
-	}`, resourceRRSetName, rrsetName, rrsetType, ttl, rrsetContent, resourceZoneName, testAccDomainsZoneV2Basic(resourceZoneName, zoneName))
+	}`, resourceRRSetName, rrsetName, rrsetType, ttl, rrsetContent, resourceZoneName, testAccDomainsZoneV2Basic(projectName, resourceZoneName, zoneName))
 }
 
 func testAccDomainsRRSetV2Basic(resourceRRSetName, rrsetName, rrsetType, rrsetContent string, ttl int, resourceZoneName string) string {
@@ -63,6 +65,7 @@ func testAccDomainsRRSetV2Basic(resourceRRSetName, rrsetName, rrsetType, rrsetCo
 		type = %[3]q
 		ttl = %[4]d
 		zone_id = selectel_domains_zone_v2.%[5]s.id
+		project_id = "${selectel_vpc_project_v2.project_tf_acc_test_1.id}"
 		records {
 			content = %[6]q
 			disabled = false

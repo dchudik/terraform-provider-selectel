@@ -33,7 +33,7 @@ func dataSourceDomainsRRSetV2() *schema.Resource {
 			},
 			"project_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"comment": {
 				Type:     schema.TypeString,

@@ -16,11 +16,8 @@ import (
 
 func getDomainsV2ClientTest(rs *terraform.ResourceState, testAccProvider *schema.Provider) (domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], error) {
 	config := testAccProvider.Meta().(*Config)
-	projectID := config.ProjectID
-	if id, ok := rs.Primary.Attributes["project_id"]; ok {
-		projectID = id
-	}
-	if projectID == "" {
+	projectID, ok := rs.Primary.Attributes["project_id"]
+	if !ok {
 		return nil, ErrProjectIDNotSetupForDNSV2
 	}
 	selvpcClient, err := config.GetSelVPCClientWithProjectScope(projectID)
@@ -166,23 +163,4 @@ func TestGetRRSetByNameAndType_whenNeededRRSetInResponseWithOffset(t *testing.T)
 	assert.Equal(t, correctIDForSearch, rrset.ID)
 	assert.Equal(t, rrsetNameForSearch, rrset.Name)
 	assert.Equal(t, rrsetTypeForSearch, string(rrset.Type))
-}
-
-func TestGetProjectIDFromResourceOrConfig_getProjectIDFromConfig(t *testing.T) {
-	expectedProjectID := "2673627"
-	resource := &schema.ResourceData{}
-	config := &Config{
-		ProjectID: expectedProjectID,
-	}
-	projectID, err := getProjectIDFromResourceOrConfig(resource, config)
-	assert.Nil(t, err)
-	assert.Equal(t, expectedProjectID, projectID)
-}
-
-func TestGetProjectIDFromResourceOrConfig_getProjectIDError(t *testing.T) {
-	resource := &schema.ResourceData{}
-	config := &Config{}
-	projectID, err := getProjectIDFromResourceOrConfig(resource, config)
-	assert.Empty(t, projectID)
-	assert.Equal(t, ErrProjectIDNotSetupForDNSV2, err)
 }
