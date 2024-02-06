@@ -11,34 +11,34 @@ import (
 	domainsV2 "github.com/selectel/domains-go/pkg/v2"
 )
 
-const resourceRrsetName = "rrset_tf_acc_test_1"
+const resourceRRSetName = "rrset_tf_acc_test_1"
 
-func TestAccDomainsRrsetV2DataSourceBasic(t *testing.T) {
+func TestAccDomainsRRSetV2DataSourceBasic(t *testing.T) {
 	testZoneName := fmt.Sprintf("%s.ru.", acctest.RandomWithPrefix("tf-acc"))
-	testRrsetName := fmt.Sprintf("%[1]s.%[2]s", acctest.RandomWithPrefix("tf-acc"), testZoneName)
-	testRrsetType := domainsV2.TXT
-	testRrsetTTL := 60
-	testRrrsetContent := fmt.Sprintf("\"%[1]s\"", acctest.RandString(16))
-	dataSourceRrrsetName := fmt.Sprintf("data.selectel_domains_rrset_v2.%[1]s", resourceRrsetName)
+	testRRSetName := fmt.Sprintf("%[1]s.%[2]s", acctest.RandomWithPrefix("tf-acc"), testZoneName)
+	testRRSetType := domainsV2.TXT
+	testRRSetTTL := 60
+	testRRSetContent := fmt.Sprintf("\"%[1]s\"", acctest.RandString(16))
+	dataSourceRRSetName := fmt.Sprintf("data.selectel_domains_rrset_v2.%[1]s", resourceRRSetName)
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccSelectelPreCheckWithProjectID(t) },
 		ProviderFactories: testAccProviders,
-		CheckDestroy:      testAccCheckDomainsV2RrsetDestroy,
+		CheckDestroy:      testAccCheckDomainsV2RRSetDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDomainsRrsetV2DataSourceBasic(resourceRrsetName, testRrsetName, string(testRrsetType), testRrrsetContent, testRrsetTTL, resourceZoneName, testZoneName),
+				Config: testAccDomainsRRSetV2DataSourceBasic(resourceRRSetName, testRRSetName, string(testRRSetType), testRRSetContent, testRRSetTTL, resourceZoneName, testZoneName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccDomainsRrsetV2ID(dataSourceRrrsetName),
-					resource.TestCheckResourceAttr(dataSourceRrrsetName, "name", testRrsetName),
-					resource.TestCheckResourceAttr(dataSourceRrrsetName, "type", string(testRrsetType)),
-					resource.TestCheckResourceAttrSet(dataSourceRrrsetName, "zone_id"),
+					testAccDomainsRRSetV2ID(dataSourceRRSetName),
+					resource.TestCheckResourceAttr(dataSourceRRSetName, "name", testRRSetName),
+					resource.TestCheckResourceAttr(dataSourceRRSetName, "type", string(testRRSetType)),
+					resource.TestCheckResourceAttrSet(dataSourceRRSetName, "zone_id"),
 				),
 			},
 		},
 	})
 }
 
-func testAccDomainsRrsetV2ID(name string) resource.TestCheckFunc {
+func testAccDomainsRRSetV2ID(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
@@ -53,7 +53,7 @@ func testAccDomainsRrsetV2ID(name string) resource.TestCheckFunc {
 	}
 }
 
-func testAccDomainsRrsetV2DataSourceBasic(resourceRrsetName, rrsetName, rrsetType, rrsetContent string, ttl int, resourceZoneName, zoneName string) string {
+func testAccDomainsRRSetV2DataSourceBasic(resourceRRSetName, rrsetName, rrsetType, rrsetContent string, ttl int, resourceZoneName, zoneName string) string {
 	return fmt.Sprintf(`
 	%[1]s
 
@@ -64,5 +64,5 @@ func testAccDomainsRrsetV2DataSourceBasic(resourceRrsetName, rrsetName, rrsetTyp
 	  type = selectel_domains_rrset_v2.%[3]s.type
 	  zone_id = selectel_domains_zone_v2.%[4]s.id
 	}
-`, testAccDomainsZoneV2Basic(resourceZoneName, zoneName), testAccDomainsRrsetV2Basic(resourceRrsetName, rrsetName, rrsetType, rrsetContent, ttl, resourceZoneName), resourceRrsetName, resourceZoneName)
+`, testAccDomainsZoneV2Basic(resourceZoneName, zoneName), testAccDomainsRRSetV2Basic(resourceRRSetName, rrsetName, rrsetType, rrsetContent, ttl, resourceZoneName), resourceRRSetName, resourceZoneName)
 }

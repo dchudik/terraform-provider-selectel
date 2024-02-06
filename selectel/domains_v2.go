@@ -81,8 +81,8 @@ func getZoneByName(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zon
 	return nil, errGettingObject(objectZone, zoneName, ErrZoneNotFound)
 }
 
-func getRrsetByNameAndType(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], zoneID, rrsetName, rrsetType string) (*domainsV2.RRSet, error) {
-	optsForSearchRrset := map[string]string{
+func getRRSetByNameAndType(ctx context.Context, client domainsV2.DNSClient[domainsV2.Zone, domainsV2.RRSet], zoneID, rrsetName, rrsetType string) (*domainsV2.RRSet, error) {
+	optsForSearchRRSet := map[string]string{
 		"name":        rrsetName,
 		"rrset_types": rrsetType,
 		"limit":       "1000",
@@ -91,26 +91,26 @@ func getRrsetByNameAndType(ctx context.Context, client domainsV2.DNSClient[domai
 
 	r, err := regexp.Compile(fmt.Sprintf("^%s.?", rrsetName))
 	if err != nil {
-		return nil, errGettingObject(objectRrset, rrsetName, err)
+		return nil, errGettingObject(objectRRSet, rrsetName, err)
 	}
 
 	for {
-		rrsets, err := client.ListRRSets(ctx, zoneID, &optsForSearchRrset)
+		rrsets, err := client.ListRRSets(ctx, zoneID, &optsForSearchRRSet)
 		if err != nil {
-			return nil, errGettingObject(objectRrset, rrsetName, err)
+			return nil, errGettingObject(objectRRSet, rrsetName, err)
 		}
 		for _, rrset := range rrsets.GetItems() {
 			if r.MatchString(rrset.Name) && string(rrset.Type) == rrsetType {
 				return rrset, nil
 			}
 		}
-		optsForSearchRrset["offset"] = strconv.Itoa(rrsets.GetNextOffset())
+		optsForSearchRRSet["offset"] = strconv.Itoa(rrsets.GetNextOffset())
 		if rrsets.GetNextOffset() == 0 {
 			break
 		}
 	}
 
-	return nil, errGettingObject(objectRrset, fmt.Sprintf("Name: %s. Type: %s.", rrsetName, rrsetType), ErrRrsetNotFound)
+	return nil, errGettingObject(objectRRSet, fmt.Sprintf("Name: %s. Type: %s.", rrsetName, rrsetType), ErrRRSetNotFound)
 }
 
 func setZoneToResourceData(d *schema.ResourceData, zone *domainsV2.Zone) error {
@@ -128,7 +128,7 @@ func setZoneToResourceData(d *schema.ResourceData, zone *domainsV2.Zone) error {
 	return nil
 }
 
-func setRrsetToResourceData(d *schema.ResourceData, rrset *domainsV2.RRSet) error {
+func setRRSetToResourceData(d *schema.ResourceData, rrset *domainsV2.RRSet) error {
 	d.SetId(rrset.ID)
 	d.Set("name", rrset.Name)
 	d.Set("comment", rrset.Comment)
@@ -141,7 +141,7 @@ func setRrsetToResourceData(d *schema.ResourceData, rrset *domainsV2.RRSet) erro
 	return nil
 }
 
-// generateSetFromRecords - generate terraform TypeList from records in rrset.
+// generateSetFromRecords - generate terraform TypeList from records in RRSet.
 func generateSetFromRecords(records []domainsV2.RecordItem) []interface{} {
 	recordsAsList := []interface{}{}
 	for _, record := range records {
@@ -154,16 +154,18 @@ func generateSetFromRecords(records []domainsV2.RecordItem) []interface{} {
 	return recordsAsList
 }
 
-// generateRecordsFromSet - generate records for Rrset from terraform TypeList.
+// generateRecordsFromSet - generate records for RRSet from terraform TypeList.
 func generateRecordsFromSet(recordsSet *schema.Set) []domainsV2.RecordItem {
 	records := []domainsV2.RecordItem{}
 	for _, recordItem := range recordsSet.List() {
-		if record, isOk := recordItem.(map[string]interface{}); isOk {
-			records = append(records, domainsV2.RecordItem{
-				Content:  record["content"].(string),
-				Disabled: record["disabled"].(bool),
-			})
+		record, isOk := recordItem.(map[string]interface{})
+		if !isOk {
+			continue
 		}
+		records = append(records, domainsV2.RecordItem{
+			Content:  record["content"].(string),
+			Disabled: record["disabled"].(bool),
+		})
 	}
 
 	return records

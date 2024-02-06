@@ -30,11 +30,11 @@ func getDomainsV2ClientTest(rs *terraform.ResourceState, testAccProvider *schema
 
 	httpClient := &http.Client{}
 	userAgent := "terraform-provider-selectel"
-	defaultApiURL := "https://api.selectel.ru/domains/v2"
+	defaultAPIURL := "https://api.selectel.ru/domains/v2"
 	hdrs := http.Header{}
 	hdrs.Add("X-Auth-Token", selvpcClient.GetXAuthToken())
 	hdrs.Add("User-Agent", userAgent)
-	domainsClient := domainsV2.NewClient(defaultApiURL, httpClient, hdrs)
+	domainsClient := domainsV2.NewClient(defaultAPIURL, httpClient, hdrs)
 
 	return domainsClient, nil
 }
@@ -111,7 +111,7 @@ func TestGetZoneByName_whenNeededZoneInResponseWithOffset(t *testing.T) {
 	assert.Equal(t, nameForSearch, zone.Name)
 }
 
-func TestGetRrsetByNameAndType_whenNeededRrrsetInResponseWithOffset(t *testing.T) {
+func TestGetRRSetByNameAndType_whenNeededRRSetInResponseWithOffset(t *testing.T) {
 	rrsetNameForSearch := "test.xyz."
 	rrsetTypeForSearch := "A"
 	correctIDForSearch := "mocked-uuid-2"
@@ -158,7 +158,7 @@ func TestGetRrsetByNameAndType_whenNeededRrrsetInResponseWithOffset(t *testing.T
 	})
 	mDNSClient.On("ListRRSets", ctx, mockedZoneID, opts2).Return(rrsetsWithoutNextOffset, nil)
 
-	rrset, err := getRrsetByNameAndType(ctx, mDNSClient, mockedZoneID, rrsetNameForSearch, rrsetTypeForSearch)
+	rrset, err := getRRSetByNameAndType(ctx, mDNSClient, mockedZoneID, rrsetNameForSearch, rrsetTypeForSearch)
 
 	assert.NoError(t, err)
 
