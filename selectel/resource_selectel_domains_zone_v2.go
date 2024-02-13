@@ -141,7 +141,7 @@ func resourceDomainsZoneV2ImportState(ctx context.Context, d *schema.ResourceDat
 		return nil, err
 	}
 
-	// import zone by name. Not zone id.
+	// use zone name instead of zone id for importing zone.
 	// example: terraform import domains_zone_v2.<resource_name> <zone_name>
 	zoneName := d.Id()
 

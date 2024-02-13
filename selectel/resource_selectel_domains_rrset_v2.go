@@ -150,7 +150,8 @@ func resourceDomainsRRSetV2ImportState(ctx context.Context, d *schema.ResourceDa
 	if err != nil {
 		return nil, err
 	}
-
+	// concat zone_name,rrset_name,rrset_type with symbol "/" instead of rrset id for importing rrset.
+	// example: terraform import domains_rrset_v2.<resource_name> <zone_name>/<rrset_name>/<rrset_type>
 	parts := strings.Split(d.Id(), "/")
 	if len(parts) != 3 {
 		return nil, errors.New("id must include three parts: zone_name/rrset_name/rrset_type")
