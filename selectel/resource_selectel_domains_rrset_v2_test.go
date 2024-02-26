@@ -60,21 +60,6 @@ func testAccDomainsRRSetV2WithZoneBasic(projectName, resourceRRSetName, rrsetNam
 	}`, resourceRRSetName, rrsetName, rrsetType, ttl, rrsetContent, resourceZoneName, testAccDomainsZoneV2Basic(projectName, resourceZoneName, zoneName))
 }
 
-func testAccDomainsRRSetV2Basic(resourceRRSetName, rrsetName, rrsetType, rrsetContent string, ttl int, resourceZoneName string) string {
-	return fmt.Sprintf(`
-	resource "selectel_domains_rrset_v2" %[1]q {
-		name = %[2]q
-		type = %[3]q
-		ttl = %[4]d
-		zone_id = selectel_domains_zone_v2.%[5]s.id
-		project_id = "${selectel_vpc_project_v2.project_tf_acc_test_1.id}"
-		records {
-			content = %[6]q
-			disabled = false
-		}
-	}`, resourceRRSetName, rrsetName, rrsetType, ttl, resourceZoneName, rrsetContent)
-}
-
 func testAccCheckDomainsV2RRSetDestroy(s *terraform.State) error {
 	ctx := context.Background()
 
