@@ -13,6 +13,8 @@ import (
 	domainsV2 "github.com/selectel/domains-go/pkg/v2"
 )
 
+const resourceRRSetName = "rrset_tf_acc_test_1"
+
 func TestAccDomainsRRSetV2Basic(t *testing.T) {
 	projectName := acctest.RandomWithPrefix("tf-acc")
 	testZoneName := fmt.Sprintf("%s.ru.", acctest.RandomWithPrefix("tf-acc"))
@@ -95,4 +97,19 @@ func testAccCheckDomainsV2RRSetDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+func testAccDomainsRRSetV2ID(name string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[name]
+		if !ok {
+			return fmt.Errorf("can't find rrset: %s", name)
+		}
+
+		if rs.Primary.ID == "" {
+			return errors.New("rrset data source ID not set")
+		}
+
+		return nil
+	}
 }
